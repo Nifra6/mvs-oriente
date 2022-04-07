@@ -12,9 +12,10 @@ P_k 		= zeros(3,size(i_k,1),nombres_images);
 P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
 
 %% Paramètres
-valeurs_z   = 60:.1:120;
-lambda      = 1/(nombres_images-1);
-interpolation = 'cubic';
+valeurs_z   	= 60:.1:120;
+lambda      	= 1/(nombres_images-1);
+interpolation 	= 'cubic';
+ertimateur		= 'MSE'
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
@@ -57,7 +58,7 @@ for i = 1:n
 	for k = 1:nombres_images-1
 		condition_image = condition_image & i_k(:,k+1) > 0 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0 & j_k(:,k+1) <= size(masque,2);
 	end
-	
+
 	% Calcul des gradients
 	for k = 1:nombres_images-1
 		i_k(:,k+1) = (ones(size(i_k,1),1) - condition_image) + condition_image .* i_k(:,k+1);
@@ -68,7 +69,7 @@ for i = 1:n
 		j_k(:,k+1) = round(j_k(:,k+1));
 		ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
 	end
-	
+
 	% Calcul des numérateurs et dénominateurs
 	A 	= [];
 	B_1 = [];
@@ -94,10 +95,13 @@ for i = 1:n
 	for k = 1:nombres_images
 		erreur_k(:,k) = (ones(size(ind,1),1) - condition_image) .* erreur_k(:,k) + condition_image .* (I(ind(:,k) + (k-1) * nombre_lignes * nombre_colonnes) + -1 ./ sqrt(p_estim.^2 + q_estim.^2 + 1));
 	end
-	%erreurs(:,i) = erreurs(:,i) + condition_image .* (I(ind(:,1)) -1 ./ sqrt(p_estim.^2 + q_estim.^2 + 1)).^2;
 	%erreurs(:,i) = erreurs(:,i) + lambda * condition_image .* (I(ind(:,1)) - I(ind(:,2) + nombre_lignes * nombre_colonnes)).^2;
-	erreurs(:,i) = (1 / nombres_images) * sum(erreur_k.^2,2); % MSE
-	%erreurs(:,i) = (1 / nombres_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2)); % E robuste
+	switch (estimateur)
+		case 'MSE'
+			erreurs(:,i) = (1 / nombres_images) * sum(erreur_k.^2,2);
+		case 'Robuste'
+			erreurs(:,i) = (1 / nombres_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+	end
 end
 
 toc
