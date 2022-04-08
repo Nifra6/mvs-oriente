@@ -15,7 +15,8 @@ P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
 valeurs_z   	= 60:.1:120;
 lambda      	= 1/(nombres_images-1);
 interpolation 	= 'cubic';
-ertimateur		= 'MSE'
+estimateur		= 'MSE';
+affichage 		= 'Pourcentage';
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
@@ -34,12 +35,18 @@ n		= length(valeurs_z);
 erreurs	= 10*ones(length(i_k), n);
 
 tic
-
+fprintf("\n")
 for i = 1:n
 
 	% Affichage de la progression des calculs
-	if mod(i,round(n/25)) == 0
-		disp("Progression à " + int2str(i/n*100) + "%");
+	switch (affichage)
+		case 'Iteration'
+			fprintf('\r');
+			fprintf("Progression : %d / %d",i,n);
+		case 'Pourcentage'
+			if mod(i,round(n/25)) == 0
+				disp("Progression à " + int2str(i/n*100) + "%");
+			end
 	end
 
 	% Sélection d'une profondeur
@@ -104,6 +111,7 @@ for i = 1:n
 	end
 end
 
+fprintf('\n');
 toc
 
 %% Résultats
