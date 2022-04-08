@@ -71,10 +71,10 @@ for indice_pixel = 1:size(i_1_liste,1)
 
 				% Calcul homographie
 				normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
-				homographie = homographie_infini + (1/z_tilde) * t_2 * normale' * K_inv;
+				homographie = homographie_infini + (1/z_tilde) * K * t_2 * normale' * K_inv;
 
 
-				if (indice_pixel == 12506 && z_tilde == round(Z_1(i_1,j_1)))
+				if (indice_pixel == 8506 && z_tilde == round(Z_1(i_1,j_1)))
 					range = 4;
 					i_br = i_1-range:i_1+range;
 					j_br = j_1-range:j_1+range;
