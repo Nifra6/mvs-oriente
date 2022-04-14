@@ -3,7 +3,7 @@ clear;
 close all;
 
 %% Données
-load ../data/donnees_calotte;
+load ../../data/donnees_calotte;
 [nombre_lignes, nombre_colonnes, nombres_images] = size(I);
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);

@@ -37,10 +37,11 @@ R_3 = [ cos_theta_3 0 sin_theta_3 ; 0 1 0 ; -sin_theta_3 0 cos_theta_3 ];
 
 % Calcul de la première image et de son gradient :
 masque_1 = zeros(taille,taille);	% Masque de la calotte
-Z_1 = zeros(taille,taille);		% Hauteur de la calotte
-I_1 = zeros(taille,taille);		% Image de la calotte
+Z_1 = zeros(taille,taille);			% Hauteur de la calotte
+I_1 = zeros(taille,taille);			% Image de la calotte
 dx_I_1 = zeros(taille,taille);		% Dérivée en x de I_1
 dy_I_1 = zeros(taille,taille);		% Dérivée en y de I_1
+N_1 = zeros(taille,taille,3);
 for i_1 = 1:taille
 	for j_1 = 1:taille
 		x_1 = X(i_1,j_1);
@@ -53,6 +54,7 @@ for i_1 = 1:taille
 			P_1 = [ x_1 ; y_1 ; z_1 ];
 			n_1 = P_1/rayon_sphere;
 			ombrage = n_1'*S;
+			N_1(i_1,j_1,:) = n_1 / norm(n_1);
 			if ombrage < 0
 				disp('Attention : ombres propres !');
 				return;
@@ -181,4 +183,4 @@ axis equal;
 
 
 
-save donnees_calotte;
+save ../pixel_par_pixel/donnees_calotte;

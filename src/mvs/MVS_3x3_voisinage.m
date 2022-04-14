@@ -3,31 +3,19 @@ clear;
 close all;
 
 %% Données
-albedo = 1;
-load ../data/donnees_calotte;
-eclairage = S;
+load ../../data/donnees_calotte;
 [nombre_lignes, nombre_colonnes, nombres_images] = size(I);
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
 ind			= ind_1;
 P_k 		= zeros(3,size(i_k,1),nombres_images);
 P_k(:,:,1) 	= [i_k - C_x, j_k - C_y, zeros(length(i_k), 1)].';
+I_decalees = decaler(I);
 
 %% Paramètres
 valeurs_z   = 60:.1:120;
-lambda      = 1/(nombres_images-1);
+bruh = [1 ; 0.5 ; 0.2 ; 0.5 ; 0.2 ; 0.5 ; 0.2 ; 0.5 ; 0.2];
 
-%% Calcul des gradients
-dx_I_k = zeros(size(I));
-dy_I_k = zeros(size(I));
-for k = 1:nombres_images
-	[dy_I, dx_I] = gradient(I(:,:,k));
-	dx_I_k(:,:,k) = dx_I;
-	dy_I_k(:,:,k) = dy_I;
-end
-grad_I_1 	= [ dx_I_1(ind_1) , dy_I_1(ind_1) ].';
-grad_I_x	= [dx_I_1(ind_1)'];
-grad_I_y    = [dy_I_1(ind_1)'];
 
 %% Boucle de reconstruction
 n		= length(valeurs_z);
@@ -58,57 +46,31 @@ for i = 1:n
 	for k = 1:nombres_images-1
 		condition_image = condition_image & i_k(:,k+1) > 0 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0 & j_k(:,k+1) <= size(masque,2);
 	end
-	
-	% Calcul des gradients
+
+	% Calcul des indices valides
 	for k = 1:nombres_images-1
 		i_k(:,k+1) = (ones(size(i_k,1),1) - condition_image) + condition_image .* i_k(:,k+1);
 		j_k(:,k+1) = (ones(size(j_k,1),1) - condition_image) + condition_image .* j_k(:,k+1);
 		ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
-		grad_I_x(k+1,:) = dx_I_k(ind(:,k+1) + k*(size(dx_I_k,1) * size(dx_I_k,2)))';
-		grad_I_y(k+1,:) = dy_I_k(ind(:,k+1) + k*(size(dy_I_k,1) * size(dy_I_k,2)))';
 	end
-	
-	% Calcul des numérateurs et dénominateurs
-	denominateur = [];
-	numerateur_1 = [];
-	numerateur_2 = [];
-	for k = 1:nombres_images-1
-		denominateur(k,:) = R(3,1,k) * grad_I_x(k+1,:) + R(3,2,k) * grad_I_y(k+1,:);
-		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k) * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		numerateur_p(k,:) = numerateur(1,:);
-		numerateur_q(k,:) = numerateur(2,:);
-	end
-
-	% Calcul des coefficients p et q
-	p_estim = zeros(nombres_images-1, size(denominateur,2));	
-	q_estim = zeros(nombres_images-1, size(denominateur,2));	
-	for k = 1:nombres_images-1
-		p_estim(k,:) = numerateur_p(k,:) ./ (denominateur(k,:));
-		q_estim(k,:) = numerateur_q(k,:) ./ (denominateur(k,:));
-	end
-	p_estim = p_estim.';
-	q_estim = q_estim.';
-	%condition_image(isnan(sum(p_estim,1))) = 0;
-	%condition_image(isnan(sum(q_estim,1))) = 0;
 
 	% Calcul de l'erreur
-	erreur_k = zeros(size(ind,1), nombres_images-1);
-	for k = 1:nombres_images-1
-		%erreur_k(:,k) = (ones(size(ind,1),1) - condition_image) .* erreur_k(:,k) + condition_image .* (I(ind(:,1)) + ([p_estim(:,k) q_estim(:,k) -1*ones(size(p_estim,1),1)] * eclairage) ./ sqrt(p_estim(:,k).^2 + q_estim(:,k).^2 + 1));
-		erreur_k(:,k) = (ones(size(ind,1),1) - condition_image) .* erreur_k(:,k) + condition_image .* (I(ind(:,1)) + -1 ./ sqrt(p_estim(:,k).^2 + q_estim(:,k).^2 + 1));
+	erreur_k = zeros(size(ind,1), nombres_images-1, 9);
+	for decal = 1:size(I_decalees,4)
+		I_direction = I_decalees(:,:,:,decal);
+		for k = 1:nombres_images-1
+			erreur_k(:,k,decal) = bruh(decal) * condition_image .* (I_direction(ind(:,1)) - I_direction(ind(:,k+1) + k * nombre_lignes * nombre_colonnes));
+		end
 	end
-	%erreurs(:,i) = erreurs(:,i) + lambda * condition_image .* (I(ind(:,1)) - I(ind(:,2) + nombre_lignes * nombre_colonnes)).^2;
-	erreurs(:,i) = (1 / (nombres_images - 1)) * sum(erreur_k.^2,2); % MSE
-	%erreurs(:,i) = (1 / (nombres_images - 1)) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2)); % E robuste
+	erreurs(:,i) = (1 / (9*(nombres_images - 1))) * sum(sum(erreur_k.^2,3),2); % MSE
+	%erreurs(:,i) = (1 / (nombres_images - 1)) * (1 - exp(-sum(sum(erreur_k.^2,3),2)/0.2^2)); % E robuste
+
 end
 
 toc
 
-sum(isnan(erreurs),'all')
-sum(isinf(erreurs),'all')
-size(erreurs)
-
 %% Résultats
+
 % Sélections des profondeurs avec l'erreur minimale
 [~,indices_min] = min(erreurs,[],2);
 z_in = transpose(valeurs_z(indices_min));
@@ -132,3 +94,24 @@ ylabel('$y$','Interpreter','Latex','FontSize',30);
 zlabel('$z$','Interpreter','Latex','FontSize',30);
 axis equal;
 rotate3d;
+
+
+
+
+%% Fonction annexe
+
+function images_decalees = decaler(image)
+	[nombre_lignes, nombre_colonnes, nombres_images] = size(image);
+	images_decalees = zeros(nombre_lignes, nombre_colonnes, nombres_images, 9);
+	for k = 1:nombres_images
+		images_decalees(:,:,k,:) = decalage(image(:,:,k));
+	end
+end
+
+function indices_decales = decaler_indice(image, indice)
+	[nombre_lignes, ~, nombres_images] = size(image);
+	indices_decales = zeros(size(indice,1), nombres_images, 9);
+	for k = 1:nombres_images
+		indices_decales(:,k,:) = decalage_indices(indice(:,k));
+	end
+end

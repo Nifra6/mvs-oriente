@@ -44,11 +44,11 @@ angles = [-pi/6 0 ; 0 -pi/6];
 R = zeros(3,3,size(angles,1));
 
 % Tirage aléatoire des angles
-nombre_tirage = 5;
-angles = zeros(nombre_tirage,2);
-for k = 1: nombre_tirage
-	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
-end
+%nombre_tirage = 5;
+%angles = zeros(nombre_tirage,2);
+%for k = 1: nombre_tirage
+%	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
+%end
 
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images
@@ -70,6 +70,7 @@ end
 Z_1 = zeros(taille,taille);			% Hauteur de la calotte
 dx_I_1 = zeros(taille,taille);		% Dérivée en x de I_1
 dy_I_1 = zeros(taille,taille);		% Dérivée en y de I_1
+N_1 = zeros(taille,taille,3);		% Normale
 for i_1 = 1:taille
 	for j_1 = 1:taille
 		x_1 = X(i_1,j_1);
@@ -82,6 +83,7 @@ for i_1 = 1:taille
 			P_1 = [ x_1 ; y_1 ; z_1 ];
 			n_1 = P_1/rayon_sphere;
 			ombrage = n_1'*S;
+			N_1(i_1,j_1,:) = n_1 / norm(n_1);
 			if ombrage < 0
 				disp('Attention : ombres propres !');
 				return;
@@ -112,6 +114,9 @@ ylabel('$x$','Interpreter','Latex','FontSize',30);
 axis equal;
 
 %% Calcul des autres images
+
+dx_I = dx_I_1;
+dy_I = dy_I_1;
 
 % Calcul de la k^ème image et de son gradient :
 for k = 1:size(angles,1)
@@ -152,6 +157,8 @@ for k = 1:size(angles,1)
 			end
 		end
 	end
+	dx_I(:,:,k+1) = dx_I_k;
+	dy_I(:,:,k+1) = dy_I_k;
 
 	% Affichage de la k^ème image :
 	if (k < 3)
@@ -166,4 +173,4 @@ for k = 1:size(angles,1)
 
 end
 
-save ../data/donnees_calotte;
+save ../../data/donnees_calotte;
