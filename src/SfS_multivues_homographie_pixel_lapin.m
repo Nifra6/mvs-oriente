@@ -53,10 +53,10 @@ for indice_pixel = 1:size(i_1_liste,1)
 	for indice_z_tilde = 1:nb_profondeurs_testees
 		z_tilde = valeurs_z(indice_z_tilde);
 		% Changements de repère
-		P_1_tilde = [pixelSize*(i_1 - u_0); pixelSize*(j_1 - v_0); z_tilde];
+		P_1_tilde = [pixelSize*(j_1 - v_0); pixelSize*(i_1 - u_0); z_tilde];
 		P_2_tilde = R_2 * P_1_tilde + t_2;
-		i_2_tilde = round(P_2_tilde(1)/pixelSize + u_0);
-		j_2_tilde = round(P_2_tilde(2)/pixelSize + v_0);
+		i_2_tilde = round(P_2_tilde(2)/pixelSize + v_0);
+		j_2_tilde = round(P_2_tilde(1)/pixelSize + u_0);
 
 		% Évalution de la position du point trouvé dans les dimensions des images
 		condition_image_2 = i_2_tilde > 0 & i_2_tilde <= size(masque_2,1) & j_2_tilde > 0 & j_2_tilde <= size(masque_2,2);
@@ -84,8 +84,8 @@ for indice_pixel = 1:size(i_1_liste,1)
 				d_equation_plan = -P_1_tilde' * normale;
 				
 				% Calcul transformation géométrique
-				u_1_decales = pixelSize*(i_1-u_0-range):pixelSize:pixelSize*(i_1-u_0+range);
-				v_1_decales = pixelSize*(j_1-v_0-range):pixelSize:pixelSize*(j_1-v_0+range);
+				u_1_decales = pixelSize*(j_1-v_0-range):pixelSize:pixelSize*(j_1-v_0+range);
+				v_1_decales = pixelSize*(i_1-u_0-range):pixelSize:pixelSize*(i_1-u_0+range);
 				[v_1_decales, u_1_decales] = meshgrid(v_1_decales,u_1_decales); %ok
 				z_1_decales = -(d_equation_plan + normale(1) * u_1_decales(:) + normale(2) * v_1_decales(:)) / normale(3);
 				z_tilde;
@@ -93,8 +93,8 @@ for indice_pixel = 1:size(i_1_liste,1)
 				% Reprojection du voisinage
 				P_1_voisinage = [u_1_decales(:)' ; v_1_decales(:)' ; z_1_decales'];
 				P_2_voisinage = R_2 * P_1_voisinage + t_2;
-				i_2_voisinage = round(P_2_voisinage(1,:)/pixelSize + u_0);
-				j_2_voisinage = round(P_2_voisinage(2,:)/pixelSize + v_0);
+				i_2_voisinage = round(P_2_voisinage(2,:)/pixelSize + v_0);
+				j_2_voisinage = round(P_2_voisinage(1,:)/pixelSize + u_0);
 
 
 				if (indice_pixel == pixel_test && round(Z_1(i_1,j_1)*10) == round(z_tilde*10))
