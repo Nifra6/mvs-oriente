@@ -6,7 +6,7 @@ L = taille_ecran(3);
 H = taille_ecran(4);
 
 %% Données
-load donnees_calotte;
+load ../../data/donnees_calotte_old;
 R2 = inv(R_2);
 R3 = inv(R_3);
 

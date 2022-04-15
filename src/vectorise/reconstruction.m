@@ -3,7 +3,7 @@ clear;
 close all;
 
 %% Données
-load ../../data/donnees_calotte;
+load ../../data/donnees_calotte_old;
 
 %% Paramètres
 valeurs_z   = 60:.1:120;

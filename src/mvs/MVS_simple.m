@@ -33,7 +33,7 @@ for i = 1:n
 
 	% Changements de repère
 	for k = 1:nombres_images-1
-		P_k(:,:,k+1) = R(:,:,k).' * P_k(:,:,1);
+		P_k(:,:,k+1) = R(:,:,k) * P_k(:,:,1);
 		i_k(:,k+1) = round(P_k(1,:,k+1) + C_x).';
 		j_k(:,k+1) = round(P_k(2,:,k+1) + C_y).';
 	end

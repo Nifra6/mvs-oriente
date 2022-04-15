@@ -48,7 +48,7 @@ for i = 1:n
 
 	% Changements de repère
 	for k = 1:nombres_images-1
-		P_k(:,:,k+1) = R(:,:,k).' * P_k(:,:,1);
+		P_k(:,:,k+1) = R(:,:,k) * P_k(:,:,1);
 		i_k(:,k+1) = round(P_k(1,:,k+1) + C_x).';
 		j_k(:,k+1) = round(P_k(2,:,k+1) + C_y).';
 	end
@@ -73,8 +73,8 @@ for i = 1:n
 	numerateur_1 = [];
 	numerateur_2 = [];
 	for k = 1:nombres_images-1
-		denominateur(k,:) = R(3,1,k) * grad_I_x(k+1,:) + R(3,2,k) * grad_I_y(k+1,:);
-		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k) * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		denominateur(k,:) = R(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 		numerateur_p(k,:) = numerateur(1,:);
 		numerateur_q(k,:) = numerateur(2,:);
 	end
