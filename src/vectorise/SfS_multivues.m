@@ -5,6 +5,7 @@ close all;
 %% Données
 load ../../data/donnees_calotte;
 [nombre_lignes, nombre_colonnes, nombres_images] = size(I);
+nombre_pixels = nombre_lignes * nombre_colonnes;
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
 ind			= ind_1;
@@ -14,7 +15,7 @@ P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
 %% Paramètres
 valeurs_z   	= 60:.1:120;
 lambda      	= 1/(nombres_images-1);
-interpolation 	= 'cubic';
+interpolation 	= 'nearest';
 estimateur		= 'MSE';
 affichage 		= 'Pourcentage';
 
@@ -30,9 +31,14 @@ grad_I_1 	= [ dx_I_1(ind_1) , dy_I_1(ind_1) ].';
 grad_I_x	= [dx_I_1(ind_1)'];
 grad_I_y    = [dy_I_1(ind_1)'];
 
+%% Mise en forme des normales
+normale_theorique = [N_1(ind_1)' ; N_1(ind_1 + nombre_pixels)' ; N_1(ind_1 + 2*nombre_pixels)'];
+
+
 %% Boucle de reconstruction
 n		= length(valeurs_z);
 erreurs	= 10*ones(length(i_k), n);
+erreurs_angulaires	= zeros(length(i_k), n);
 
 tic
 fprintf("\n")
@@ -94,13 +100,13 @@ for i = 1:n
 		p_q = p_q + A(k,:) .* [B_1(k,:); B_2(k,:)];
 	end
 	p_q 	= p_q ./ sum(A.^2, 1);
-	p_estim = p_q(1, :).';
-	q_estim = p_q(2, :).';
+	p_estim = -p_q(1, :).';	% Attention au - en facteur, par rapport à l'orientation de l'axe z
+	q_estim = -p_q(2, :).';
 
 	% Calcul de l'erreur
 	erreur_k = zeros(size(ind,1), nombres_images);
 	for k = 1:nombres_images
-		erreur_k(:,k) = (ones(size(ind,1),1) - condition_image) .* erreur_k(:,k) + condition_image .* (I(ind(:,k) + (k-1) * nombre_lignes * nombre_colonnes) + -1 ./ sqrt(p_estim.^2 + q_estim.^2 + 1));
+		erreur_k(:,k) = (ones(size(ind,1),1) - condition_image) .* erreur_k(:,k) + condition_image .* (I(ind(:,k) + (k-1) * nombre_pixels) + -1 ./ sqrt(p_estim.^2 + q_estim.^2 + 1));
 	end
 	%erreurs(:,i) = erreurs(:,i) + lambda * condition_image .* (I(ind(:,1)) - I(ind(:,2) + nombre_lignes * nombre_colonnes)).^2;
 	switch (estimateur)
@@ -109,6 +115,11 @@ for i = 1:n
 		case 'Robuste'
 			erreurs(:,i) = (1 / nombres_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 	end
+
+	% Calcul de la normale
+	normale = [p_estim' ; q_estim' ; ones(1,size(ind,1))];
+	erreur_angulaire = (180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)));
+	erreurs_angulaires(:,i) = erreur_angulaire';
 end
 
 fprintf('\n');
@@ -119,16 +130,22 @@ toc
 [~,indices_min] = min(erreurs,[],2);
 z_in = transpose(valeurs_z(indices_min));
 z = zeros(nombre_lignes, nombre_colonnes);
-indice_masque  = find(masque(:,:,1));
-z(indice_masque) = z_in;
+z(ind_1) = z_in;
+
+% Sélections des erreurs angulaires
+angles = ones(nombre_lignes, nombre_colonnes);
+max(angles,[],'all')
+max(erreurs_angulaires,[],'all')
+angles(ind_1) = abs(erreurs_angulaires(sub2ind((1:size(ind_1,1))',indices_min)));
+max(angles,[],'all')
 
 % Mesures
 disp("==============")
 disp("Mesure relative de profondeur")
-sum(abs(Z_1(indice_masque) - z(indice_masque)),'all') / size(z_in,1)
+sum(abs(Z_1(ind_1) - z(ind_1)),'all') / size(z_in,1)
 ecart_moyen = sum(Z_1(find(masque(:,:,1))) - z_in) / size(z_in,1);
 disp("Mesure relative de forme")
-sum(abs(Z_1(indice_masque) - (z(indice_masque) + ecart_moyen)),'all') / size(z_in,1)
+sum(abs(Z_1(ind_1) - (z(ind_1) + ecart_moyen)),'all') / size(z_in,1)
 
 % Affichage
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
@@ -136,5 +153,13 @@ plot3(X,Y,z,'k.');
 xlabel('$x$','Interpreter','Latex','FontSize',30);
 ylabel('$y$','Interpreter','Latex','FontSize',30);
 zlabel('$z$','Interpreter','Latex','FontSize',30);
+title('Relief trouvé')
 axis equal;
 rotate3d;
+
+% Affichage des erreurs angulaires
+max(angles,[],'all')
+angles = angles / max(angles,[],'all');
+figure;
+imshow(angles);
+

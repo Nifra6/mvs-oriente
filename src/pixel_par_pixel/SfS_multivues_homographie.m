@@ -14,7 +14,7 @@ I_2 = I(:,:,2);
 masque_1 = masque(:,:,1);
 masque_2 = masque(:,:,2);
 % La pose
-R_2 = inv(R(:,:,1));
+R_2 = R(:,:,1);
 t_2 = t(:,1);
 % Le gradient de l'image 2
 dx_I_2 = dx_I(:,:,2);
@@ -24,24 +24,25 @@ dy_I_2 = dy_I(:,:,2);
 %% Paramètres
 valeurs_z 		= 60:1:120;	% Les valeurs de profondeurs utilisées
 range			= 4;		% Voisinage à prendre en compte
-affichage_log	= 1;
+affichage_log	= 1;		% Affichage d'informations diverses
 
 %% Algorithme
 while (1)
 	% Sélection d'un pixel
 	figure;
+	title("Cliquez sur le pixel souhaité.")
 	imshow(I_1);
-	P = drawpoint;
-	pos = P.Position;
-	i_1 = round(pos(2));
-	j_1 = round(pos(1));
-	grad_I_1 = [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
+	P			= drawpoint;
+	pos 		= P.Position;
+	i_1 		= round(pos(2));
+	j_1 		= round(pos(1));
+	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
 	z = Z_1(i_1,j_1);
 
 	% Changements de repère
-	P_1 = [i_1 - u_0; j_1 - v_0; z];
+	P_1	= [i_1 - u_0; j_1 - v_0; z];
 	P_2 = R_2 * P_1;
 	i_2 = round(P_2(1) + u_0);
 	j_2 = round(P_2(2) + v_0);
@@ -52,10 +53,9 @@ while (1)
 	% Si le point reprojeté tombe sur le masque de la deuxième image
 	if condition_image & masque_2(i_2,j_2)
 
-		grad_I_2 = [dx_I_2(i_2,j_2); dy_I_2(i_2,j_2)];
-
+		grad_I_2 		= [dx_I_2(i_2,j_2); dy_I_2(i_2,j_2)];
+		numerateur_pq 	= grad_I_1 - R_2(1:2,1:2)' * grad_I_2;
 		denominateur_pq = R_2(1:2,3)' * grad_I_2;
-		numerateur_pq = grad_I_1 - R_2(1:2,1:2)' * grad_I_2;
 
 		% Si pas de division par 0, on continue
 		if abs(denominateur_pq) > 0
@@ -68,7 +68,10 @@ while (1)
 			normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
 			if (affichage_log)
 				disp("===== Comparaison des normales")
-				reshape(N_1(i_1,j_1,:),3,1) - normale 
+				normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
+				normale_theorique - normale
+				(180/pi) * atan2(norm(cross(normale_theorique,normale)),dot(normale_theorique,normale))
+				(180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)))
 			end
 			d_equation_plan = -P_1' * normale;
 
@@ -110,63 +113,51 @@ while (1)
 			end
 
 
-			% TODO mettre au propre
-			if (z == Z_1(i_1,j_1))
-				% Affichage des résultats
-				figure;
-	
-				% Image 1
-				subplot(2,2,1);
-				imshow(I_1(i_1-range:i_1+range,j_1-range:j_1+range));
-				title("Image 1 au voisinage")
+			% Affichage des résultats
+			figure;
 
-				% Image 2
-				subplot(2,2,2);
-				imshow(I_2_voisinage);
-				title("Image 2 au voisinage")
+			% Image 1
+			subplot(2,2,1);
+			imshow(I_1(i_1-range:i_1+range,j_1-range:j_1+range));
+			title("Image 1 au voisinage")
 
-				% Voisinage 1
-				subplot(2,2,3);
-				imshow(I_1);
-				axis on
-				hold on;
-				i_1_voisinage = i_1-range:i_1+range;
-				j_1_voisinage = j_1-range:j_1+range;
-				[i_1_voisinage, j_1_voisinage] = meshgrid(i_1_voisinage,j_1_voisinage);
-				[i_1_limites, j_1_limites] = limites_voisinage(i_1_voisinage,j_1_voisinage);
-				fill(j_1_limites,i_1_limites,'g');
-				plot(j_1,i_1, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
-				title("Localisation du voisinage sur l'image 1");
-				hold off;
+			% Image 2
+			subplot(2,2,2);
+			imshow(I_2_voisinage);
+			title("Image 2 au voisinage")
 
-				% Voisinage 2
-				subplot(2,2,4);
-				imshow(I_2)
-				axis on
-				hold on;
-				[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re,j_2_voisinage_re);
-				fill(j_2_limites,i_2_limites,'g');
-				plot(j_2,i_2, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
-				title("Localisation du voisinage sur l'image 2");
-				hold off;
-			end
+			% Voisinage 1
+			subplot(2,2,3);
+			imshow(I_1);
+			axis on
+			hold on;
+			i_1_voisinage = i_1-range:i_1+range;
+			j_1_voisinage = j_1-range:j_1+range;
+			[i_1_voisinage, j_1_voisinage] = meshgrid(i_1_voisinage,j_1_voisinage);
+			[i_1_limites, j_1_limites] = limites_voisinage(i_1_voisinage,j_1_voisinage);
+			fill(j_1_limites,i_1_limites,'g');
+			plot(j_1,i_1, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+			title("Localisation du voisinage sur l'image 1");
+			hold off;
+
+			% Voisinage 2
+			subplot(2,2,4);
+			imshow(I_2)
+			axis on
+			hold on;
+			[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re,j_2_voisinage_re);
+			fill(j_2_limites,i_2_limites,'g');
+			plot(j_2,i_2, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+			title("Localisation du voisinage sur l'image 2");
+			hold off;
 		end
 	end
-
 	disp("Appuyez sur une touche pour recommencer.")
 	pause;
 	close all;
 end
 
 %% Fonctions annexes
-
-function images_decalees = decaler(image)
-	[nombre_lignes, nombre_colonnes, nombres_images] = size(image);
-	images_decalees = zeros(nombre_lignes, nombre_colonnes, nombres_images, 9);
-	for k = 1:nombres_images
-		images_decalees(:,:,k,:) = decalage(image(:,:,k));
-	end
-end
 
 function [i_limite, j_limite] = limites_voisinage(i_voisinage, j_voisinage)
 	i_limite = i_voisinage(1,:)';

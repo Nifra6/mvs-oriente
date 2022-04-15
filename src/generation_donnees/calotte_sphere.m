@@ -6,6 +6,7 @@ L = taille_ecran(3);
 H = taille_ecran(4);
 
 %% Paramètres
+
 % Paramètres des images
 taille 	= 256;							% Taille des images
 I 		= zeros(taille, taille, 3);		% Ensemble des images
