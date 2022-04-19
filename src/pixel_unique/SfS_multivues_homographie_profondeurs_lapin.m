@@ -6,24 +6,29 @@ L = taille_ecran(3);
 H = taille_ecran(4);
 
 %% Données
-load ../../data/donnees_calotte;
+load ../../data/data_bunny_ortho;
+% Les profondeurs
+Z_1 = z(:,:,1);
 % Les images
-I_1 = I(:,:,1);
-I_2 = I(:,:,2);
+I_1 = Im(:,:,1);
+I_2 = Im(:,:,2);
 % Les masques des images
-masque_1 = masque(:,:,1);
-masque_2 = masque(:,:,2);
+masque_1 = mask(:,:,1);
+masque_2 = mask(:,:,2);
 % La pose
-R_2 = R(:,:,1);
-t_2 = t(:,1);
+R_2 = R(:,:,2) * R(:,:,1)';
+t_2 = t(:,2) - R_2 * t(:,1);
 % Le gradient de l'image 2
-dx_I_2 = dx_I(:,:,2);
-dy_I_2 = dy_I(:,:,2);
-%[dy_I_2, dx_I_2] = gradient(I_2);
+[dy_I_1, dx_I_1] = gradient(I_1); 
+[dy_I_2, dx_I_2] = gradient(I_2);
+% Ratio pixel distance
+u_0 = size(I_1,1)/2;
+v_0 = size(I_1,2)/2;
+pixelSize = 1.5/540;
 
 %% Paramètres
-valeurs_z 		= 60:.1:120;	% Les valeurs de profondeurs utilisées
-range			= 4;		% Voisinage à prendre en compte
+valeurs_z 		= 1:0.04:2.4;	% Les valeurs de profondeurs utilisées
+range			= 3;		% Voisinage à prendre en compte
 affichage_log	= 0;		% Affichage d'informations diverses
 
 %% Algorithme
@@ -42,17 +47,16 @@ while (1)
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
-	Z_1(i_1,j_1)
 
 	% Récupération de la profondeur
 	for indice_z = 1:nb_profondeurs
 		z = valeurs_z(indice_z);
 
 		% Changements de repère
-		P_1	= [i_1 - u_0; j_1 - v_0; z];
-		P_2 = R_2 * P_1;
-		i_2 = round(P_2(1) + u_0);
-		j_2 = round(P_2(2) + v_0);
+		P_1	= [pixelSize*(j_1 - u_0); pixelSize*(i_1 - v_0); z];
+		P_2 = R_2 * P_1 + t_2;
+		i_2 = round(P_2(2)/pixelSize + u_0);
+		j_2 = round(P_2(1)/pixelSize + v_0);
 
 		% Vérification si pixel hors image
 		condition_image = i_2 > 0 & i_2 <= size(masque_2,1) & j_2 > 0 & j_2 <= size(masque_2,2);
@@ -68,8 +72,8 @@ while (1)
 			if abs(denominateur_pq) > 0
 
 				% Estimation de la pente
-				p_estime = -numerateur_pq(1) / denominateur_pq;
-				q_estime = -numerateur_pq(2) / denominateur_pq;
+				p_estime = numerateur_pq(1) / denominateur_pq;
+				q_estime = numerateur_pq(2) / denominateur_pq;
 
 				% Calcul du plan au pixel considéré
 				normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
@@ -83,10 +87,10 @@ while (1)
 				d_equation_plan = -P_1' * normale;
 
 				% Calcul de la transformation géométrique
-				i_1_decales = i_1-u_0-range:i_1-u_0+range;
-				j_1_decales = j_1-v_0-range:j_1-v_0+range;
-				[i_1_decales, j_1_decales] = meshgrid(i_1_decales,j_1_decales);
-				z_1_decales = -(d_equation_plan + normale(1) * i_1_decales(:) + normale(2) * j_1_decales(:)) / normale(3);
+				u_1_decales = pixelSize*(j_1-u_0-range):pixelSize:pixelSize*(j_1-u_0+range);
+				v_1_decales = pixelSize*(i_1-v_0-range):pixelSize:pixelSize*(i_1-v_0+range);
+				[v_1_decales, u_1_decales] = meshgrid(v_1_decales,u_1_decales);
+				z_1_decales = -(d_equation_plan + normale(1) * u_1_decales(:) + normale(2) * v_1_decales(:)) / normale(3);
 				if (affichage_log)
 					disp("===== Profondeurs z")
 					z
@@ -94,14 +98,14 @@ while (1)
 				end
 
 				% Reprojection du voisinage
-				P_1_voisinage = [i_1_decales(:)' ; j_1_decales(:)' ; z_1_decales'];
-				P_1_voisinage_mvs = [i_1_decales(:)' ; j_1_decales(:)' ; z * ones(1,size(i_1_decales,1)^2)];
-				P_2_voisinage = R_2 * P_1_voisinage;
-				P_2_voisinage_mvs = R_2 * P_1_voisinage_mvs;
-				i_2_voisinage = round(P_2_voisinage(1,:) + u_0);
-				i_2_voisinage_mvs = round(P_2_voisinage_mvs(1,:) + u_0);
-				j_2_voisinage = round(P_2_voisinage(2,:) + v_0);
-				j_2_voisinage_mvs = round(P_2_voisinage_mvs(2,:) + v_0);
+				P_1_voisinage = [u_1_decales(:)' ; v_1_decales(:)' ; z_1_decales'];
+				P_1_voisinage_mvs = [u_1_decales(:)' ; v_1_decales(:)' ; z * ones(1,size(u_1_decales,1)^2)];
+				P_2_voisinage = R_2 * P_1_voisinage + t_2;
+				P_2_voisinage_mvs = R_2 * P_1_voisinage_mvs + t_2;
+				i_2_voisinage = round(P_2_voisinage(2,:)/pixelSize + v_0);
+				i_2_voisinage_mvs = round(P_2_voisinage_mvs(2,:)/pixelSize + v_0);
+				j_2_voisinage = round(P_2_voisinage(1,:)/pixelSize + u_0);
+				j_2_voisinage_mvs = round(P_2_voisinage_mvs(1,:)/pixelSize + u_0);
 				if (affichage_log)
 					disp("===== Les i du voisinage")
 					i_2
@@ -188,6 +192,7 @@ while (1)
 	% Meilleures profondeur
 	[~, indice_mvs] = min(erreurs_mvs);
 	[~, indice_sfs] = min(erreurs_sfs);
+	disp("==============================")
 	disp("Valeur réelle :")
 	Z_1(i_1,j_1)
 	disp("Valeur MVS :")
