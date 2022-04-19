@@ -12,9 +12,9 @@ R3 = inv(R_3);
 
 
 %% Paramètres
-valeurs_z = 0:1:120;	% Les valeurs de profondeurs utilisées
+valeurs_z = 60:1:120;	% Les valeurs de profondeurs utilisées
 lambda = 0;				% Paramètre pour l'évaluation du score de la reprojection
-deuxieme_image = 1;		% Si oui, utilisation d'une deuxième rotation
+deuxieme_image = 0;		% Si oui, utilisation d'une deuxième rotation
 
 %% Variables utiles
 [i_1_liste,j_1_liste] = find(masque_1);
@@ -157,13 +157,13 @@ rotate3d;
 
 
 % Estimation de z avec p et q
-p_estimes = liste_p_estimes(indices_min);
-q_estimes = liste_p_estimes(indices_min);
-p = zeros(taille,taille);
-q = zeros(taille,taille);
-p(find(masque_1)) = p_estimes;
-q(find(masque_1)) = q_estimes;
-z_estim = integration_SCS(p,q);
+%p_estimes = liste_p_estimes(indices_min);
+%q_estimes = liste_p_estimes(indices_min);
+%p = zeros(taille,taille);
+%q = zeros(taille,taille);
+%p(find(masque_1)) = p_estimes;
+%q(find(masque_1)) = q_estimes;
+%z_estim = integration_SCS(p,q);
 
 
 % Affichage du relief reconstruit sur le domaine Omega :
