@@ -20,9 +20,10 @@ masque_2 = masque(:,:,2);
 R_2 = R(:,:,1);
 t_2 = t(:,1);
 % Le gradient de l'image 2
-dx_I_2 = dx_I(:,:,2);
-dy_I_2 = dy_I(:,:,2);
-%[dy_I_2, dx_I_2] = gradient(I_2);
+%dx_I_2 = dx_I(:,:,2);
+%dy_I_2 = dy_I(:,:,2);
+[dy_I_1, dx_I_1] = gradient(I_1);
+[dy_I_2, dx_I_2] = gradient(I_2);
 
 %% Paramètres
 valeurs_z 		= 60:1:120;	% Les valeurs de profondeurs utilisées
@@ -145,25 +146,29 @@ z = zeros(256, 256);
 z(find(masque_1)) = z_in;
 
 % Affichage
-%figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
-%plot3(X,Y,z,'k.');
-%xlabel('$x$','Interpreter','Latex','FontSize',30);
-%ylabel('$y$','Interpreter','Latex','FontSize',30);
-%zlabel('$z$','Interpreter','Latex','FontSize',30);
-%axis equal;
-%rotate3d;
-
+figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
+plot3(X,Y,z,'k.');
+xlabel('$x$','Interpreter','Latex','FontSize',30);
+ylabel('$y$','Interpreter','Latex','FontSize',30);
+zlabel('$z$','Interpreter','Latex','FontSize',30);
+axis equal;
+rotate3d;
+hold on
+cam1 = plotCamera('Location', [0 0 0], 'Orientation', eye(3), 'Opacity', 0);
+cam2 = plotCamera('Location', [0 0 0], 'Orientation', R_2, 'Opacity', 0);
 
 % Affichage du resultat :
-XYZ_test = shapeFromDmOrtho(z, masque_1);
-
-figure('Name', 'z from estimated (p,q)')
-surfl(XYZ_test(:,:,1),XYZ_test(:,:,2),XYZ_test(:,:,3),[0 90])
-shading flat
-colormap gray
-axis ij
-axis tight
-axis off
+%XYZ_test = shapeFromDmOrtho(z, masque_1);
+%figure('Name', 'z from estimated (p,q)')
+%surfl(XYZ_test(:,:,1),XYZ_test(:,:,2),XYZ_test(:,:,3),[0 90])
+%hold on
+%shading flat
+%colormap gray
+%axis ij
+%axis tight
+%axis off
+%cam1 = plotCamera('Location', [u_0 v_0 150], 'Orientation', eye(3), 'Opacity', 0);
+%cam2 = plotCamera('Location', [u_0 v_0 150], 'Orientation', R_2, 'Opacity', 0);
 
 %% Fonctions annexes
 

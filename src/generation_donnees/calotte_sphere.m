@@ -41,15 +41,14 @@ S = [ 0 ; 0 ; 1 ];
 
 % Angles de rotations
 %angles = [-pi/6 0 ; 0 -pi/6 ; pi/12 -pi/17; -pi/19 pi/7];
-angles = [-pi/6 0 ; 0 -pi/6];
-R = zeros(3,3,size(angles,1));
+%angles = [-pi/6 0 ; 0 -pi/6];
 
 % Tirage aléatoire des angles
-%nombre_tirage = 5;
-%angles = zeros(nombre_tirage,2);
-%for k = 1: nombre_tirage
-%	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
-%end
+nombre_tirage = 5;
+angles = zeros(nombre_tirage,2);
+for k = 1: nombre_tirage
+	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
+end
 
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images

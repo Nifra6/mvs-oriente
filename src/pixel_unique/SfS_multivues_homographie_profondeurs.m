@@ -17,9 +17,10 @@ masque_2 = masque(:,:,2);
 R_2 = R(:,:,1);
 t_2 = t(:,1);
 % Le gradient de l'image 2
-dx_I_2 = dx_I(:,:,2);
-dy_I_2 = dy_I(:,:,2);
-%[dy_I_2, dx_I_2] = gradient(I_2);
+%dx_I_2 = dx_I(:,:,2);
+%dy_I_2 = dy_I(:,:,2);
+[dy_I_1, dx_I_1] = gradient(I_1);
+[dy_I_2, dx_I_2] = gradient(I_2);
 
 %% Paramètres
 valeurs_z 		= 60:.1:120;	% Les valeurs de profondeurs utilisées
@@ -42,7 +43,6 @@ while (1)
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
-	Z_1(i_1,j_1)
 
 	% Récupération de la profondeur
 	for indice_z = 1:nb_profondeurs
@@ -188,6 +188,7 @@ while (1)
 	% Meilleures profondeur
 	[~, indice_mvs] = min(erreurs_mvs);
 	[~, indice_sfs] = min(erreurs_sfs);
+	disp("==============================");
 	disp("Valeur réelle :")
 	Z_1(i_1,j_1)
 	disp("Valeur MVS :")

@@ -11,13 +11,13 @@ load ../../data/data_bunny_ortho;
 Z_1 = z(:,:,1);
 % Les images
 I_1 = Im(:,:,1);
-I_2 = Im(:,:,2);
+I_2 = Im(:,:,3);
 % Les masques des images
 masque_1 = mask(:,:,1);
-masque_2 = mask(:,:,2);
+masque_2 = mask(:,:,3);
 % La pose
-R_2 = R(:,:,2) * R(:,:,1)';
-t_2 = t(:,2) - R_2 * t(:,1);
+R_2 = R(:,:,3) * R(:,:,1)';
+t_2 = t(:,3) - R_2 * t(:,3);
 % Le gradient de l'image 2
 [dy_I_1, dx_I_1] = gradient(I_1); 
 [dy_I_2, dx_I_2] = gradient(I_2);
@@ -159,7 +159,7 @@ while (1)
 					j_1_voisinage = j_1-range:j_1+range;
 					[i_1_voisinage, j_1_voisinage] = meshgrid(i_1_voisinage,j_1_voisinage);
 					[i_1_limites, j_1_limites] = limites_voisinage(i_1_voisinage,j_1_voisinage);
-					fill(j_1_limites,i_1_limites,'g');
+					%fill(j_1_limites,i_1_limites,'g');
 					plot(j_1,i_1, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
 					title("Localisation du voisinage sur l'image 1");
 					hold off;
@@ -170,7 +170,7 @@ while (1)
 					axis on
 					hold on;
 					[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re,j_2_voisinage_re);
-					fill(j_2_limites,i_2_limites,'g');
+					%fill(j_2_limites,i_2_limites,'g');
 					plot(j_2,i_2, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
 					title("Localisation du voisinage sur l'image 2");
 					hold off;
