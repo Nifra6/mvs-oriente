@@ -48,13 +48,13 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
-	i_1 = 248
-	j_1 = 106
+	%i_1 = 248
+	%j_1 = 106
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
 	z = Z_1(i_1,j_1);
-	z = 1.88;
+	%z = 1.88;
 
 	% Changements de repère
 	u_1 = j_1 - u_0
