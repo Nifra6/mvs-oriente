@@ -54,6 +54,7 @@ while (1)
 
 	% Récupération de la profondeur
 	z = Z_1(i_1,j_1);
+	z = 1.88;
 
 	% Changements de repère
 	u_1 = j_1 - u_0
@@ -64,8 +65,6 @@ while (1)
 	v_2 = round(P_2(2)/pixelSize)
 	i_2 = v_2 + v_0
 	j_2 = u_2 + u_0
-	P_2(3)
-	Z_2(i_2,69)
 
 	% Vérification si pixel hors image
 	condition_image = i_2 > 0 & i_2 <= size(masque_2,1) & j_2 > 0 & j_2 <= size(masque_2,2);

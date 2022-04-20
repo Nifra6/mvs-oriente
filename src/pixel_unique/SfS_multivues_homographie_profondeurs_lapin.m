@@ -28,8 +28,8 @@ pixelSize = 1.5/540;
 
 %% Paramètres
 valeurs_z 		= 1:0.04:2.4;	% Les valeurs de profondeurs utilisées
-range			= 3;		% Voisinage à prendre en compte
-affichage_log	= 0;		% Affichage d'informations diverses
+range			= 3;			% Voisinage à prendre en compte
+affichage_log	= 0;			% Affichage d'informations diverses
 
 %% Algorithme
 nb_profondeurs = size(valeurs_z,2);
@@ -46,6 +46,8 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
+	%i_1 = 248
+	%j_1 = 106
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
