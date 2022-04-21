@@ -36,22 +36,22 @@ normale_theorique = [N_1(ind_1)' ; N_1(ind_1 + nombre_pixels)' ; N_1(ind_1 + 2*n
 
 
 %% Boucle de reconstruction
-n		= length(valeurs_z);
-erreurs	= 10*ones(length(i_k), n);
-erreurs_angulaires	= zeros(length(i_k), n);
+nombre_z		= length(valeurs_z);
+erreurs	= 10*ones(length(i_k), nombre_z);
+erreurs_angulaires	= zeros(length(i_k), nombre_z);
 
 tic
 fprintf("\n")
-for i = 1:n
+for i = 1:nombre_z
 
 	% Affichage de la progression des calculs
 	switch (affichage)
 		case 'Iteration'
 			fprintf('\r');
-			fprintf("Progression : %d / %d",i,n);
+			fprintf("Progression : %d / %d",i,nombre_z);
 		case 'Pourcentage'
-			if mod(i,round(n/25)) == 0
-				disp("Progression à " + int2str(i/n*100) + "%");
+			if mod(i,round(nombre_z/25)) == 0
+				disp("Progression à " + int2str(i/nombre_z*100) + "%");
 			end
 	end
 

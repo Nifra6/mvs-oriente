@@ -35,8 +35,8 @@ v_1_coord = pixelSize*(1-v_0):pixelSize:pixelSize*(size(I_1,1)-v_0);
 
 %% Paramètres
 valeurs_z 		= 1:0.04:2.6;	% Les valeurs de profondeurs utilisées
-range			= 3;		% Voisinage à prendre en compte
-affichage_log	= 0;		% Affichage d'informations diverses
+range			= 3;			% Voisinage à prendre en compte
+affichage_log	= 0;			% Affichage d'informations diverses
 interpolation 	= 'nearest';
 
 %% Variables utiles
