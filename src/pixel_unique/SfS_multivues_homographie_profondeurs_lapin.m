@@ -21,8 +21,8 @@ masque_2 = mask(:,:,indice_deuxieme_image);
 R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
 % Le gradient de l'image 2
-[dy_I_1, dx_I_1] = gradient(I_1); 
-[dy_I_2, dx_I_2] = gradient(I_2);
+[dx_I_1, dy_I_1] = gradient(I_1); 
+[dx_I_2, dy_I_2] = gradient(I_2);
 % Caractéristique de la caméra
 u_0 = size(I_1,1)/2;
 v_0 = size(I_1,2)/2;

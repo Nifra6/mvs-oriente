@@ -84,7 +84,7 @@ for indice_pixel = 1:nb_pixels_utilises
 				q_estime = -numerateur_pq(2) / denominateur_pq;
 
 				% Calcul du plan au pixel considéré
-				normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
+				normale = (1 / sqrt(p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
 				if (affichage_log)
 					disp("===== Comparaison des normales")
 					normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
@@ -133,6 +133,23 @@ for indice_pixel = 1:nb_pixels_utilises
 					sum(diff,"all")
 				end
 			end
+		end
+
+		%% Affichage debug
+		if (indice_pixel == 12543 && round(z) == round(Z_1(i_1,j_1)))
+			[i_1 j_1]
+			Z_1(i_1,j_1)
+			i_1_decales
+			j_1_decales
+			[p_estime q_estime]
+			normale
+			-P_1
+			d_equation_plan
+			z_1_decales
+			i_2_voisinage
+			j_2_voisinage
+			I_1(i_1-range:i_1+range,j_1-range:j_1+range)
+			I_2_voisinage
 		end
 	end
 end

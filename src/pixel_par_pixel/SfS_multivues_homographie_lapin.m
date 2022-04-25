@@ -7,27 +7,31 @@ H = taille_ecran(4);
 
 %% Imports
 addpath(genpath('../toolbox/'));
+addpath(genpath('../../../Développement/Ortho/Toolbox/'));
 
 %% Données
 load ../../data/data_bunny_ortho.mat;
+% Choix des images
+indice_premiere_image = 1;
+indice_deuxieme_image = 2;
 % Les profondeurs
-Z_1 = z(:,:,1);
+Z_1 = z(:,:,indice_premiere_image);
 % Les images
-I_1 = Im(:,:,1);
-I_2 = Im(:,:,2);
+I_1 = Im(:,:,indice_premiere_image);
+I_2 = Im(:,:,indice_deuxieme_image);
 % Les masques des images
-masque_1 = mask(:,:,1);
-masque_2 = mask(:,:,2);
+masque_1 = mask(:,:,indice_premiere_image);
+masque_2 = mask(:,:,indice_premiere_image);
 % La pose
-R_2 = R(:,:,2) * R(:,:,1)';
-t_2 = t(:,2) - R_2 * t(:,1);
+R_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
+t_2 = t(:,indice_deuxieme_image) - R_2 * t(:,indice_premiere_image);
 % Le gradient de l'image 2
-[dy_I_1, dx_I_1] = gradient(I_1);
-[dy_I_2, dx_I_2] = gradient(I_2);
-% Ratio pixel distance
+[dx_I_1, dy_I_1] = gradient(I_1);
+[dx_I_2, dy_I_2] = gradient(I_2);
+% Caractéristiques de la caméra
 u_0 = size(I_1,1)/2;
 v_0 = size(I_1,2)/2;
-pixelSize = 1.5/540;
+pixelSize = 1.5/size(I_1,2);
 % Coordonnées
 u_1_coord = pixelSize*(1-u_0):pixelSize:pixelSize*(size(I_1,2)-u_0);
 v_1_coord = pixelSize*(1-v_0):pixelSize:pixelSize*(size(I_1,1)-v_0);
@@ -35,9 +39,9 @@ v_1_coord = pixelSize*(1-v_0):pixelSize:pixelSize*(size(I_1,1)-v_0);
 
 %% Paramètres
 valeurs_z 		= 1:0.04:2.6;	% Les valeurs de profondeurs utilisées
-range			= 3;			% Voisinage à prendre en compte
+rayon_voisinage	= 3;			% Voisinage à prendre en compte
 affichage_log	= 0;			% Affichage d'informations diverses
-interpolation 	= 'nearest';
+interpolation 	= 'nearest';	% Type d'interpolation
 
 %% Variables utiles
 [i_1_liste, j_1_liste] = find(masque_1);
@@ -71,8 +75,8 @@ for indice_pixel = 1:nb_pixels_utilises
 		% Changements de repère
 		P_1	= [pixelSize*(j_1 - u_0); pixelSize*(i_1 - v_0); z];
 		P_2 = R_2 * P_1 + t_2;
-		i_2 = round(P_2(2)/pixelSize + u_0);
-		j_2 = round(P_2(1)/pixelSize + v_0);
+		i_2 = round(P_2(2)/pixelSize + v_0);
+		j_2 = round(P_2(1)/pixelSize + u_0);
 
 		% Vérification si pixel hors image
 		condition_image = i_2 > 0 & i_2 <= size(masque_2,1) & j_2 > 0 & j_2 <= size(masque_2,2);
@@ -85,14 +89,14 @@ for indice_pixel = 1:nb_pixels_utilises
 			denominateur_pq = R_2(1:2,3)' * grad_I_2;
 
 			% Si pas de division par 0, on continue
-			if abs(denominateur_pq) > 0
+			if abs(denominateur_pq) > 0.001
 
 				% Estimation de la pente
 				p_estime = numerateur_pq(1) / denominateur_pq;
 				q_estime = numerateur_pq(2) / denominateur_pq;
 
 				% Calcul du plan au pixel considéré
-				normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
+				normale = (1 / sqrt(p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; -1];
 				if (affichage_log)
 					disp("===== Comparaison des normales")
 					normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
@@ -103,14 +107,14 @@ for indice_pixel = 1:nb_pixels_utilises
 				d_equation_plan = -P_1' * normale;
 
 				% Calcul de la transformation géométrique
-				u_1_decales = pixelSize*(j_1-u_0-range):pixelSize:pixelSize*(j_1-u_0+range);
-				v_1_decales = pixelSize*(i_1-v_0-range):pixelSize:pixelSize*(i_1-v_0+range);
+				u_1_decales = pixelSize*(j_1-u_0-rayon_voisinage):pixelSize:pixelSize*(j_1-u_0+rayon_voisinage);
+				v_1_decales = pixelSize*(i_1-v_0-rayon_voisinage):pixelSize:pixelSize*(i_1-v_0+rayon_voisinage);
 				[v_1_decales, u_1_decales] = meshgrid(v_1_decales,u_1_decales);
 				z_1_decales = -(d_equation_plan + normale(1) * u_1_decales(:) + normale(2) * v_1_decales(:)) / normale(3);
 				if (affichage_log)
 					disp("===== Profondeurs z")
 					z
-					reshape(z_1_decales, 2*range+1, 2*range+1)
+					reshape(z_1_decales, 2*rayon_voisinage+1, 2*rayon_voisinage+1)
 				end
 
 				% Reprojection du voisinage
@@ -121,10 +125,10 @@ for indice_pixel = 1:nb_pixels_utilises
 				if (affichage_log)
 					disp("===== Les i du voisinage")
 					i_2
-					i_2_voisinage_re = reshape(i_2_voisinage, 2*range+1, 2*range+1)
+					i_2_voisinage_re = reshape(i_2_voisinage, 2*rayon_voisinage+1, 2*rayon_voisinage+1)
 					disp("===== Les j du voisinage")
 					j_2
-					j_2_voisinage_re = reshape(j_2_voisinage, 2*range+1, 2*range+1)
+					j_2_voisinage_re = reshape(j_2_voisinage, 2*rayon_voisinage+1, 2*rayon_voisinage+1)
 					disp("===== Le contour du voisinage")
 					i_2_voisinage_re
 					[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re+u_0,j_2_voisinage_re+v_0);
@@ -132,12 +136,12 @@ for indice_pixel = 1:nb_pixels_utilises
 				end
 
 				% Récupération des niveaux de gris dans l'image 2 du voisinage	
-				I_2_voisinage = reshape(interp2(I_2, j_2_voisinage(:), i_2_voisinage(:),interpolation),2*range+1,2*range+1)';
-				scores(indice_pixel, indice_z) = sum((I_1(i_1-range:i_1+range,j_1-range:j_1+range) - I_2_voisinage).^2,'all');
+				I_2_voisinage = reshape(interp2(I_2, j_2_voisinage(:), i_2_voisinage(:),interpolation),2*rayon_voisinage+1,2*rayon_voisinage+1)';
+				scores(indice_pixel, indice_z) = sum((I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage) - I_2_voisinage).^2,'all');
 
 				if (affichage_log)
 					disp("===== Différences entre les images")
-					diff = I_1(i_1-range:i_1+range,j_1-range:j_1+range) - I_2_voisinage
+					diff = I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage) - I_2_voisinage
 					sum(diff,"all")
 				end
 			end

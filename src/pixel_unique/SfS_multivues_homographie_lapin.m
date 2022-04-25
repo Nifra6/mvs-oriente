@@ -4,6 +4,10 @@ close all;
 taille_ecran = get(0,'ScreenSize');
 L = taille_ecran(3);
 H = taille_ecran(4);
+format long;
+
+%% Imports
+addpath(genpath('../../../Développement/Ortho/Toolbox/'))
 
 %% Données
 load ../../data/data_bunny_ortho;
@@ -22,10 +26,15 @@ masque_2 = mask(:,:,indice_deuxieme_image);
 R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
 % Le gradient de l'image 2
-[dy_I_1, dx_I_1] = gradient(I_1);
-[dy_I_2, dx_I_2] = gradient(I_2);
+[dx_I_1, dy_I_1] = gradient(I_1);
+[dx_I_2, dy_I_2] = gradient(I_2);
+
 % Les normales
-N_1 = n;
+N_1 = n_true;
+
+%figure()
+%displayNormalMap(N_1,'GT normMap');
+
 % Caractéristique de la caméra
 u_0 		= size(I_1,2)/2;	% En pix
 v_0 		= size(I_1,1)/2;	% En pix
@@ -44,8 +53,8 @@ while (1)
 	imshow(I_1);
 	P			= drawpoint;
 	pos 		= P.Position;
-	i_1 		= round(pos(2));
-	j_1 		= round(pos(1));
+	i_1 		= round(pos(2))
+	j_1 		= round(pos(1))
 	%i_1 = 220;
 	%j_1 = 175;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
@@ -74,7 +83,7 @@ while (1)
 		denominateur_pq = R_1_2(1:2,3)' * grad_I_2;
 
 		% Si pas de division par 0, on continue
-		if abs(denominateur_pq) > 0
+		if abs(denominateur_pq) > 0.001
 
 			% Estimation de la pente
 			p_estime = numerateur_pq(1) / denominateur_pq;
@@ -85,11 +94,11 @@ while (1)
 			if (affichage_log)
 				disp("===== Comparaison des normales")
 				normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
-				normale_theorique = 1/norm(normale_theorique) * normale_theorique
+				normale_theorique = normale_theorique / norm(normale_theorique);
 				normale
+				normale_theorique
 				normale_theorique - normale
 				(180/pi) * atan2(norm(cross(normale_theorique,normale)),dot(normale_theorique,normale))
-				(180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)))
 			end
 			%normale = (1/norm(normale_theorique)) * normale_theorique;
 			d_equation_plan = -P_1' * normale;
@@ -157,7 +166,7 @@ while (1)
 			j_1_voisinage = j_1-rayon_voisinage:j_1+rayon_voisinage;
 			[i_1_voisinage, j_1_voisinage] = meshgrid(i_1_voisinage,j_1_voisinage);
 			[i_1_limites, j_1_limites] = limites_voisinage(i_1_voisinage,j_1_voisinage);
-			fill(j_1_limites,i_1_limites,'g');
+			%fill(j_1_limites,i_1_limites,'g');
 			plot(j_1,i_1, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
 			title("Localisation du voisinage sur l'image 1");
 			hold off;
@@ -168,11 +177,41 @@ while (1)
 			axis on
 			hold on;
 			[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re,j_2_voisinage_re);
-			fill(j_2_limites,i_2_limites,'g');
+			%fill(j_2_limites,i_2_limites,'g');
 			plot(j_2,i_2, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
 			title("Localisation du voisinage sur l'image 2");
 			hold off;
 		end
+
+		figure()
+		imshow(I_1);
+		axis on
+		hold on;
+		i_1_voisinage = i_1-rayon_voisinage:i_1+rayon_voisinage;
+		j_1_voisinage = j_1-rayon_voisinage:j_1+rayon_voisinage;
+		[i_1_voisinage, j_1_voisinage] = meshgrid(i_1_voisinage,j_1_voisinage);
+		[i_1_limites, j_1_limites] = limites_voisinage(i_1_voisinage,j_1_voisinage);
+		%fill(j_1_limites,i_1_limites,'g');
+
+		P_arrow = P_1 + normale_theorique/100;
+		u_arrow = round(P_2(1)/pixelSize);
+		v_arrow = round(P_2(2)/pixelSize);
+		i_arrow = v_arrow + v_0;
+		j_arrow = u_arrow + u_0;
+		i_arrow = i_1 + normale_theorique(2)
+		j_arrow = j_1 + normale_theorique(1)
+
+		for i_base = 
+		X = [j_1 j_arrow];
+		Y = [i_1 i_arrow];
+		%annotation('arrow',X,Y,'color','r')
+		plot(X,Y, 'b-', 'MarkerSize', 30, 'LineWidth', 2);
+
+		plot(j_1,i_1, 'r+', 'MarkerSize', 30, 'LineWidth', 2);
+		title("Localisation du voisinage sur l'image 1");
+		hold off;
+		%axis equal
+
 	end
 	disp("Appuyez sur une touche pour recommencer.")
 	pause;

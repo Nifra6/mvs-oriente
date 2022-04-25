@@ -65,7 +65,7 @@ while (1)
 			q_estime = -numerateur_pq(2) / denominateur_pq;
 
 			% Calcul du plan au pixel considéré
-			normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
+			normale = (1 / sqrt(p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
 			if (affichage_log)
 				disp("===== Comparaison des normales")
 				normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
