@@ -44,7 +44,7 @@ S = [ 0 ; 0 ; 1 ];
 %angles = [-pi/6 0 ; 0 -pi/6];
 
 % Tirage aléatoire des angles
-nombre_tirage = 5;
+nombre_tirage = 10;
 angles = zeros(nombre_tirage,2);
 for k = 1: nombre_tirage
 	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);

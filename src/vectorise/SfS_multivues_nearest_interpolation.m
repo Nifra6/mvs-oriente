@@ -12,7 +12,7 @@ P_k 		= zeros(3,size(i_k,1),nombres_images);
 P_k(:,:,1) 	= [i_k - C_x, j_k - C_y, zeros(length(i_k), 1)].';
 
 %% Paramètres
-valeurs_z   = 60:.1:120;
+valeurs_z   = 60:1:120;
 lambda      = 1/(nombres_images-1);
 
 %% Calcul des gradients
