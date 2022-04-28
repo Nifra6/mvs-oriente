@@ -14,7 +14,7 @@ I_2 = I(:,:,2);
 masque_1 = masque(:,:,1);
 masque_2 = masque(:,:,2);
 % La pose
-R_2 = R(:,:,1);
+R_2 = R(:,:,1)';
 t_2 = t(:,1);
 % Le gradient de l'image 2
 %dx_I_2 = dx_I(:,:,2);
@@ -25,7 +25,7 @@ t_2 = t(:,1);
 %% Paramètres
 valeurs_z 		= 60:.1:120;	% Les valeurs de profondeurs utilisées
 range			= 4;		% Voisinage à prendre en compte
-affichage_log	= 0;		% Affichage d'informations diverses
+affichage_log	= 1;		% Affichage d'informations diverses
 
 %% Algorithme
 nb_profondeurs = size(valeurs_z,2);
@@ -42,17 +42,24 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
+	i_1 = 146;
+	j_1 = 163;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
 	for indice_z = 1:nb_profondeurs
 		z = valeurs_z(indice_z);
+		profondeur_reelle = round(z*10) == round(Z_1(i_1,j_1)*10);
 
 		% Changements de repère
 		P_1	= [i_1 - u_0; j_1 - v_0; z];
 		P_2 = R_2 * P_1;
 		i_2 = round(P_2(1) + u_0);
 		j_2 = round(P_2(2) + v_0);
+		if (profondeur_reelle)
+			[i_1 j_1]
+			[i_2 j_2]
+		end
 
 		% Vérification si pixel hors image
 		condition_image = i_2 > 0 & i_2 <= size(masque_2,1) & j_2 > 0 & j_2 <= size(masque_2,2);
@@ -73,12 +80,11 @@ while (1)
 
 				% Calcul du plan au pixel considéré
 				normale = (1 / (p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; 1];
-				if (affichage_log)
+				if (affichage_log && profondeur_reelle)
 					disp("===== Comparaison des normales")
 					normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
 					normale_theorique - normale
-					(180/pi) * atan2(norm(cross(normale_theorique,normale)),dot(normale_theorique,normale))
-					(180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)))
+					angle_normales = (180/pi) * atan2(norm(cross(normale_theorique,normale)),dot(normale_theorique,normale))
 				end
 				d_equation_plan = -P_1' * normale;
 
@@ -87,7 +93,7 @@ while (1)
 				j_1_decales = j_1-v_0-range:j_1-v_0+range;
 				[i_1_decales, j_1_decales] = meshgrid(i_1_decales,j_1_decales);
 				z_1_decales = -(d_equation_plan + normale(1) * i_1_decales(:) + normale(2) * j_1_decales(:)) / normale(3);
-				if (affichage_log)
+				if (affichage_log && profondeur_reelle)
 					disp("===== Profondeurs z")
 					z
 					reshape(z_1_decales, 2*range+1, 2*range+1)
@@ -102,7 +108,7 @@ while (1)
 				i_2_voisinage_mvs = round(P_2_voisinage_mvs(1,:) + u_0);
 				j_2_voisinage = round(P_2_voisinage(2,:) + v_0);
 				j_2_voisinage_mvs = round(P_2_voisinage_mvs(2,:) + v_0);
-				if (affichage_log)
+				if (affichage_log && profondeur_reelle)
 					disp("===== Les i du voisinage")
 					i_2
 					i_2_voisinage_re = reshape(i_2_voisinage, 2*range+1, 2*range+1)
@@ -118,7 +124,7 @@ while (1)
 				% Récupération des niveaux de gris dans l'image 2 du voisinage	
 				I_2_voisinage = reshape(interp2(I_2, j_2_voisinage(:), i_2_voisinage(:),'nearest'),2*range+1,2*range+1)';
 				I_2_voisinage_mvs = reshape(interp2(I_2, j_2_voisinage_mvs(:), i_2_voisinage_mvs(:),'nearest'),2*range+1,2*range+1)';
-				if (affichage_log)
+				if (affichage_log && profondeur_reelle)
 					disp("===== Différences entre les images")
 					diff = I_1(i_1-range:i_1+range,j_1-range:j_1+range) - I_2_voisinage
 					sum(diff,"all")
@@ -183,9 +189,10 @@ while (1)
 	%plot(valeurs_z',erreurs_pq,'b')
 	plot([Z_1(i_1,j_1) ; Z_1(i_1,j_1)],[0 ; max(erreurs_mvs)],'b')
 	legend('MVS Voisinage', 'SfS Voisinage')
-	hold off
 
 	% Meilleures profondeur
+	erreurs_mvs_corrige = (erreurs_mvs ~= 0) .* erreurs_mvs + (erreurs_mvs == 0) .* ones(size(erreurs_mvs));
+	erreurs_sfs_corrige = (erreurs_sfs ~= 0) .* erreurs_sfs + (erreurs_sfs == 0) .* ones(size(erreurs_sfs));
 	[~, indice_mvs] = min(erreurs_mvs);
 	[~, indice_sfs] = min(erreurs_sfs);
 	disp("==============================");
@@ -195,6 +202,10 @@ while (1)
 	valeurs_z(indice_mvs)
 	disp("Valeur SFS :")
 	valeurs_z(indice_sfs)
+
+	plot([valeurs_z(indice_mvs) ; valeurs_z(indice_mvs)],[0 ; max(erreurs_mvs)],'g')
+	plot([valeurs_z(indice_sfs) ; valeurs_z(indice_sfs)],[0 ; max(erreurs_mvs)],'r')
+	hold off
 
 	% Demander le nouveau pixel
 	disp("Appuyez sur une touche pour recommencer.")

@@ -61,7 +61,7 @@ for i = 1:nombre_z
 
 	% Changements de repère
 	for k = 1:nombre_images-1
-		P_k(:,:,k+1) = R(:,:,k) * P_k(:,:,1);
+		P_k(:,:,k+1) = R(:,:,k)' * P_k(:,:,1);
 		i_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
 		j_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
 	end

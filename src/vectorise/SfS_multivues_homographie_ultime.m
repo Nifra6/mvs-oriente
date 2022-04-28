@@ -3,30 +3,40 @@ clear;
 close all;
 
 %% Données
+% Fichier des données
 load ../../data/donnees_calotte;
+% Tailles des images
 [nombre_lignes, nombre_colonnes, nombre_images] = size(I);
 nombre_pixels = nombre_lignes * nombre_colonnes;
+% Les poses relatives
+R_1_k = zeros(3,3,nombre_images-1);
+t_1_k = zeros(3,nombre_images-1);
+for k = 1:nombre_images-1
+	R_1_k(:,:,k) = R(:,:,k+1) * R(:,:,1)';
+	t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
+end
+% Filtrage des pixels considérés par le masque
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
+ind			= ind_1;
 nombre_pixels_etudies = size(ind_1,1);
 P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
-P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
+P_k(:,:,1) 	= [j_k - u_0, i_k - v_0, zeros(length(i_k), 1)].';
 
 %% Paramètres
-valeurs_z   	= 60:1:120;
-lambda      	= 1/(nombre_images-1);
-interpolation 	= 'nearest';
-estimateur		= 'MSE';
-affichage 		= 'Pourcentage';
-affichage_debug = 1;
-rayon_voisinage = 1;
-taille_patch 	= (2*rayon_voisinage + 1)^2;
+valeurs_z   	= 80:1:140;						% Valeurs de profondeurs testées
+interpolation 	= 'nearest';					% Type d'interpolation
+estimateur		= 'MSE';						% Estimateur utilisé pour l'évaluation des erreurs
+affichage 		= 'Pourcentage';				% Type d'affichage de la progression
+affichage_debug = 1;							% Affichage d'informations diverses
+rayon_voisinage = 1;							% Rayon du voisinage carré à prendre en compte
+taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
 for k = 1:nombre_images
-	[dy_I, dx_I] = gradient(I(:,:,k));
+	[dx_I, dy_I] = gradient(I(:,:,k));
 	dx_I_k(:,:,k) = dx_I;
 	dy_I_k(:,:,k) = dy_I;
 end
@@ -70,15 +80,15 @@ for i = 1:nombre_z
 
 	% Changements de repère
 	for k = 1:nombre_images-1
-		P_k(:,:,k+1) = inv(R(:,:,k)) * P_k(:,:,1);
-		i_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
-		j_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
+		P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
+		i_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
+		j_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
 	end
 
 	% Vérification des pixels hors images
 	condition_image = ones(size(i_k(:,1)));
 	for k = 1:nombre_images-1
-		condition_image = condition_image & i_k(:,k+1) > 0 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0 & j_k(:,k+1) <= size(masque,2);
+		condition_image = condition_image & i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nombre_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nombre_colonnes;
 	end
 
 	% Calcul des gradients
@@ -89,30 +99,31 @@ for i = 1:nombre_z
 		grad_I_y(k+1,:) = interp2(dy_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
 		i_k(:,k+1) = round(i_k(:,k+1));
 		j_k(:,k+1) = round(j_k(:,k+1));
+		ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
 	end
 
 	% Calcul des numérateurs et dénominateurs
-	A 	= [];
-	B_1 = [];
-	B_2 = [];
+	denominateur = [];
+	numerateur_x = [];
+	numerateur_y = [];
 	for k = 1:nombre_images-1
-		A(k,:) = R(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		b = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		B_1(k,:) = b(1,:);
-		B_2(k,:) = b(2,:);
+		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		numerateur_x(k,:) = numerateur(1,:);
+		numerateur_y(k,:) = numerateur(2,:);
+		denominateur(k,:) = R(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 	end
 
 	% Calcul des coefficients p et q
 	p_q = 0;	
 	for k = 1:nombre_images-1
-		p_q = p_q + A(k,:) .* [B_1(k,:); B_2(k,:)];
+		p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
 	end
-	p_q 	= p_q ./ sum(A.^2, 1);
-	p_estim = -p_q(1, :);	% Attention au - en facteur, par rapport à l'orientation de l'axe z
-	q_estim = -p_q(2, :);
+	p_q 	= p_q ./ sum(denominateur.^2, 1);
+	p_estim = p_q(1, :);
+	q_estim = p_q(2, :);
 
 	% Calcul de la normale
-	normale = [p_estim ; q_estim ; ones(1,nombre_pixels_etudies)] ./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nombre_pixels_etudies));
+	normale = [p_estim ; q_estim ; -ones(1,nombre_pixels_etudies)] ./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nombre_pixels_etudies));
 	erreur_angulaire = (180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)));
 	erreurs_angulaires(:,i) = erreur_angulaire';
 
@@ -122,8 +133,8 @@ for i = 1:nombre_z
 	% Calcul de la transformation géométrique
 	ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 	[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
-	u_1_decales = i_1_decales-u_0;
-	v_1_decales = j_1_decales-v_0;
+	u_1_decales = j_1_decales-u_0;
+	v_1_decales = i_1_decales-v_0;
 
 	normale_1 = repmat(normale(1,:)',1,(2*rayon_voisinage+1)^2);
 	normale_2 = repmat(normale(2,:)',1,(2*rayon_voisinage+1)^2);
@@ -139,10 +150,9 @@ for i = 1:nombre_z
 	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 	for k = 1:nombre_images-1
 		P_2_voisinage = inv(R(:,:,k)) * P_1_voisinage;
-		%P_2_voisinage_ok = zeros(3*nombre_pixels_etudies,taille_patch);
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
-		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
-		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);
+		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);
+		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
 	end
 
 	% Calcul de l'erreur

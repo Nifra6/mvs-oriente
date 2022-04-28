@@ -14,7 +14,7 @@ I_2 = I(:,:,2);
 masque_1 = masque(:,:,1);
 masque_2 = masque(:,:,2);
 % La pose
-R_2 = R(:,:,1);
+R_2 = R(:,:,1)';
 t_2 = t(:,1);
 % Le gradient de l'image 2
 dx_I_2 = dx_I(:,:,2);

@@ -22,7 +22,7 @@ I_1 = Im(:,:,indice_premiere_image);
 I_2 = Im(:,:,indice_deuxieme_image);
 % Les masques des images
 masque_1 = mask(:,:,indice_premiere_image);
-masque_2 = mask(:,:,indice_premiere_image);
+masque_2 = mask(:,:,indice_deuxieme_image);
 % La pose
 R_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_2 = t(:,indice_deuxieme_image) - R_2 * t(:,indice_premiere_image);

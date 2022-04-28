@@ -20,6 +20,7 @@ alpha			= 0.7;					% Proportion entre les rayons des silhouettes
 rayon_calotte 	= alpha*rayon_sphere;	% Rayon de la calotte
 
 % Paramètres de la caméra
+eloignement_camera = rayon_sphere + 100;
 f 		= 1;							% Distance focale
 u_0 	= C_x;							% Coordonnées du point principal
 v_0		= C_y;
@@ -53,21 +54,26 @@ end
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images
 masque 	= zeros(taille, taille, size(angles,1)+1);		% Ensemble des masques
-R       = zeros(3,3,size(angles,1));
-t		= zeros(3,size(angles,1));
+R       = zeros(3,3,size(angles,1)+1);
+t		= zeros(3,size(angles,1)+1);
+
+% Translation et rotation de la première caméra
+R(:,:,1) = eye(3);
+t(:,1) = [0 ; 0 ; eloignement_camera];
 
 % Rotation entre les deux poses de la caméra, supposée orthogonale :
 for k = 1:size(angles,1)
 	angle_k = angles(k,:);
-	R(:,:,k) = [cos(angle_k(2))                , 0               ,  sin(angle_k(2));...
+	R(:,:,k+1) = [cos(angle_k(2))                , 0               ,  sin(angle_k(2));...
 			sin(angle_k(1))  * sin(angle_k(2)) , cos(angle_k(1)) , -sin(angle_k(1)) * cos(angle_k(2));...
 			-cos(angle_k(1)) * sin(angle_k(2)) , sin(angle_k(1)) ,  cos(angle_k(1)) * cos(angle_k(2))];
+	t(:,k+1) = [0 ; 0 ; eloignement_camera];
 end
 
 %% Calcul de l'image alignée
 
 % Calcul de la première image et de son gradient :
-Z_1 = zeros(taille,taille);			% Hauteur de la calotte
+Z_1 = 1e5*ones(taille,taille);		% Hauteur de la calotte
 dx_I_1 = zeros(taille,taille);		% Dérivée en x de I_1
 dy_I_1 = zeros(taille,taille);		% Dérivée en y de I_1
 N_1 = zeros(taille,taille,3);		% Normale
@@ -79,11 +85,15 @@ for i_1 = 1:taille
 		if rho_carre_1 <= rayon_calotte^2
 			masque(i_1,j_1,1) = 1;
 			z_1 = sqrt(rayon_sphere^2-rho_carre_1);
-			Z_1(i_1,j_1) = z_1;
+			Z_1(i_1,j_1) = eloignement_camera - z_1;
 			P_1 = [ x_1 ; y_1 ; z_1 ];
 			n_1 = P_1/rayon_sphere;
 			ombrage = n_1'*S;
 			N_1(i_1,j_1,:) = n_1 / norm(n_1);
+			%temp = N_1(i_1,j_1,2);
+			%N_1(i_1,j_1,2) = N_1(i_1,j_1,1);
+			%N_1(i_1,j_1,1) = N_1(i_1,j_1,2);
+			N_1(i_1,j_1,3) = -N_1(i_1,j_1,3);
 			if ombrage < 0
 				disp('Attention : ombres propres !');
 				return;
@@ -131,7 +141,7 @@ for k = 1:size(angles,1)
 			if rho_carre_k <= rayon_sphere^2
 				z_k 		= sqrt(rayon_sphere^2 - rho_carre_k);
 				P_k 		= [ x_k ; y_k ; z_k ];
-				P_1 		= R(:,:,k) * P_k;
+				P_1 		= R(:,:,k+1) * P_k;
 				rho_carre_1 = P_1(1)^2 + P_1(2)^2;
 				if rho_carre_1 <= rayon_calotte^2
 					if P_1(3) < 0
@@ -175,7 +185,13 @@ end
 
 
 %% Préparation des données pour usage
-%for k = 1:size(angles,1)
-%	R(:,:,k) = inv(R(:,:,k));
-%end
+for k = 1:size(angles,1)+1
+	I(:,:,k) = transpose(I(:,:,k));
+	masque(:,:,k) = transpose(masque(:,:,k));
+end
+for k = 1:3
+	N_1(:,:,k) = transpose(N_1(:,:,k));
+end
+Z_1 = Z_1';
+
 save ../../data/donnees_calotte;
