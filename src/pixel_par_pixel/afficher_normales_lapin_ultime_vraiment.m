@@ -7,32 +7,36 @@ H = taille_ecran(4);
 
 %% Imports
 addpath(genpath('../../../Développement/Ortho/Toolbox/'));
-addpath(genpath('../toolbox/'));
 
 %% Données
-load ../../data/donnees_calotte.mat;
+load ../../data/data_bunny_ortho.mat;
+load ../../data/normales_veritables.mat;
+
 % Choix des images
 indice_premiere_image = 1;
 indice_deuxieme_image = 2;
 % Les profondeurs
-Z_1 = Z_1(50:end,:);
+Z_1 = z(:,:,indice_premiere_image);
+Z_1=Z_1*540/1.5;
+
 % Les normales
-N_1 = N_1(50:end,:,:);
+N_1 = n_true;
 % Les images
-I_1 = I(50:end,:,indice_premiere_image);
-I_2 = I(50:end,:,indice_deuxieme_image);
+I_1 = Im(:,:,indice_premiere_image);
+I_2 = Im(:,:,indice_deuxieme_image);
 % Les tailles
 [nombre_lignes, nombre_colonnes] = size(I_1);
 % Les masques des images
-masque_1 = masque(50:end,:,indice_premiere_image);
-masque_2 = masque(50:end,:,indice_deuxieme_image);
+masque_1 = mask(:,:,indice_premiere_image);
+masque_2 = mask(:,:,indice_deuxieme_image);
 % La pose
 R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
+t_1_2 = t_1_2*nombre_colonnes/1.5;
 % Caractéristiques de la caméra
-u_0 = u_0;
-v_0 = v_0 - 50;
-pixelSize = 1;
+u_0 = nombre_colonnes/2;
+v_0 = nombre_lignes/2;
+pixelSize = 1.5/nombre_colonnes;
 
 % Les gradients
 %[dx_I_1, dy_I_1] = gradient(I_1);
@@ -42,8 +46,8 @@ pixelSize = 1;
 Dx_main = G(1:2:end-1,:);
 Dy_main = G(2:2:end,:);
 clear G;
-dx_I_1_calc = Dx_main * I_1(imask) / pixelSize;
-dy_I_1_calc = Dy_main * I_1(imask) / pixelSize;
+dx_I_1_calc = Dx_main * I_1(imask);
+dy_I_1_calc = Dy_main * I_1(imask);
 dx_I_1 = zeros(size(I_1));
 dy_I_1 = zeros(size(I_1));
 dx_I_1(imask) = dx_I_1_calc;
@@ -53,8 +57,8 @@ clear imask;
 Dx_main = G(1:2:end-1,:);
 Dy_main = G(2:2:end,:);
 clear G;
-dx_I_2_calc = Dx_main * I_2(imask) / pixelSize;
-dy_I_2_calc = Dy_main * I_2(imask) / pixelSize;
+dx_I_2_calc = Dx_main * I_2(imask);
+dy_I_2_calc = Dy_main * I_2(imask);
 dx_I_2 = zeros(size(I_2));
 dy_I_2 = zeros(size(I_2));
 dx_I_2(imask) = dx_I_2_calc;
@@ -108,10 +112,10 @@ for indice_pixel = 1:nb_pixels_utilises
 			% Changements de repère
 			u_1 = j_1 - u_0;
 			v_1 = i_1 - v_0;
-			P_1 = [pixelSize * u_1 ; pixelSize * v_1 ; z];
+			P_1 = [u_1 ; v_1 ; z];
 			P_2 = R_1_2 * P_1 + t_1_2;
-			u_2 = P_2(1) / pixelSize;
-			v_2 = P_2(2) / pixelSize;
+			u_2 = P_2(1);
+			v_2 = P_2(2);
 			i_2 = v_2 + v_0;
 			j_2 = u_2 + u_0;
 
@@ -121,16 +125,23 @@ for indice_pixel = 1:nb_pixels_utilises
 			% Si le point reprojeté tombe sur le masque de la deuxième image
 			if ( condition_image && masque_2(round(i_2),round(j_2)) )
 
-				grad_I_2 		= [interp2(dx_I_2,j_2,i_2); interp2(dy_I_2,j_2,i_2)];
+				%grad_I_2 		= [interp2(dx_I_2,j_2,i_2); interp2(dy_I_2,j_2,i_2)];
+				i_2=round(i_2);
+				j_2=round(j_2);
+				grad_I_2 = [dx_I_2(i_2,j_2); dy_I_2(i_2,j_2)];
 				numerateur_pq 	= grad_I_1 - R_1_2(1:2,1:2)' * grad_I_2;
 				denominateur_pq = R_1_2(1:2,3)' * grad_I_2;
 
 				% Si pas de division par 0, on continue
-				if abs(denominateur_pq) > 0
+				if abs(denominateur_pq) > 0.001
 
 					% Estimation de la pente
 					p_estime = numerateur_pq(1) / denominateur_pq;
 					q_estime = numerateur_pq(2) / denominateur_pq;
+
+					p_true_current = p_true(i_1,j_1);
+					q_true_current = q_true(i_1,j_1);
+					keyboard
 
 					% Calcul du plan au pixel considéré
 					normale = (1 / sqrt(p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; -1];

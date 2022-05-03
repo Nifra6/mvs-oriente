@@ -2,6 +2,9 @@
 clear;
 close all;
 
+%% Imports
+addpath(genpath('../toolbox/'));
+
 %% Données
 % Fichier des données
 load ../../data/donnees_calotte;
@@ -37,6 +40,7 @@ dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
 for k = 1:nombre_images
 	[dx_I, dy_I] = gradient(I(:,:,k));
+	%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
 	dx_I_k(:,:,k) = dx_I;
 	dy_I_k(:,:,k) = dy_I;
 end
@@ -95,6 +99,7 @@ for i = 1:nombre_z
 	for k = 1:nombre_images-1
 		i_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image) + condition_image .* i_k(:,k+1);
 		j_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image) + condition_image .* j_k(:,k+1);
+		% P'têt une carabistouille ci-dessus
 		grad_I_x(k+1,:) = interp2(dx_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
 		grad_I_y(k+1,:) = interp2(dy_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
 		i_k(:,k+1) = round(i_k(:,k+1));
@@ -107,10 +112,10 @@ for i = 1:nombre_z
 	numerateur_x = [];
 	numerateur_y = [];
 	for k = 1:nombre_images-1
-		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 		numerateur_x(k,:) = numerateur(1,:);
 		numerateur_y(k,:) = numerateur(2,:);
-		denominateur(k,:) = R(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		denominateur(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 	end
 
 	% Calcul des coefficients p et q
@@ -149,7 +154,7 @@ for i = 1:nombre_z
 	z_1_decales_vec = reshape(z_1_decales',1,size(z_1_decales,1)*size(z_1_decales,2));
 	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 	for k = 1:nombre_images-1
-		P_2_voisinage = inv(R(:,:,k)) * P_1_voisinage;
+		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
 		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);
 		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
@@ -177,12 +182,15 @@ for i = 1:nombre_z
 		Z_1(i_k(ind_debug),j_k(ind_debug))
 		i_1_decales(ind_debug,:)
 		j_1_decales(ind_debug,:)
-		size(p_estim)
+		disp("===== Pente et normale")
 		[p_estim(ind_debug) q_estim(ind_debug)]
 		normale(:,ind_debug)
+		N_1(i_k(ind_debug), j_k(ind_debug), :)
+		erreur_angulaire(ind_debug)
 		-P_k(:,ind_debug,1)
 		d_equation_plan(ind_debug)
 		z_1_decales(ind_debug,:)
+		disp("===== Voisinages sur les images témoins")
 		i_2_voisinage(ind_debug,:)
 		j_2_voisinage(ind_debug,:)
 		I_1_voisinage(ind_debug,:)
@@ -199,7 +207,8 @@ toc
 
 %% Résultats
 % Sélections des profondeurs avec l'erreur minimale
-[~,indices_min] = min(erreurs,[],2);
+erreurs_corrigees = (erreurs ~= 0) .* erreurs + (erreurs == 0) .* ones(size(erreurs));
+[~,indices_min] = min(erreurs_corrigees,[],2);
 z_in = transpose(valeurs_z(indices_min));
 z = zeros(nombre_lignes, nombre_colonnes);
 z(ind_1) = z_in;

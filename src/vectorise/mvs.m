@@ -4,14 +4,22 @@ close all;
 
 %% Données
 load ../../data/donnees_calotte;
+% Taille des images
 [nombre_lignes, nombre_colonnes, nombre_images] = size(I);
 nombre_pixels = nombre_lignes * nombre_colonnes;
+% Les poses relatives
+R_1_k = zeros(size(R));
+for k = 1:size(R,3)
+	R_1_k(:,:,k) = R(:,:,k)';
+end
+% Filtrage des pixels considérés par le masque
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
-ind			= ind_1;
 nombre_pixels_etudies = size(ind_1,1);
 P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
 P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
+
+
 
 %% Paramètres
 valeurs_z   	= 60:1:120;
@@ -71,7 +79,7 @@ for i = 1:nombre_z
 
 	% Changements de repère
 	for k = 1:nombre_images-1
-		P_k(:,:,k+1) = R(:,:,k)' * P_k(:,:,1);
+		P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1);
 		i_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
 		j_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
 	end
@@ -104,7 +112,7 @@ for i = 1:nombre_z
 	z_1_decales_vec = valeur_z * ones(size(u_1_decales_vec));
 	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 	for k = 1:nombre_images-1
-		P_2_voisinage = R(:,:,k)' * P_1_voisinage;
+		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage;
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
 		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
 		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);

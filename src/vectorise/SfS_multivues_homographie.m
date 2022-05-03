@@ -2,10 +2,20 @@
 clear;
 close all;
 
+%% Imports
+addpath(genpath('../toolbox'));
+
 %% Données
 load ../../data/donnees_calotte;
+% Taille des images
 [nombre_lignes, nombre_colonnes, nombre_images] = size(I);
 nombre_pixels = nombre_lignes * nombre_colonnes;
+% Les poses relatives
+R_1_k = zeros(size(R));
+for k = 1:size(R,3)
+	R_1_k(:,:,k) = R(:,:,k)';
+end
+% Filtrage des pixels considérés par le masque
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
 nombre_pixels_etudies = size(ind_1,1);
@@ -14,7 +24,6 @@ P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
 
 %% Paramètres
 valeurs_z   	= 60:1:120;
-lambda      	= 1/(nombre_images-1);
 interpolation 	= 'nearest';
 estimateur		= 'MSE';
 affichage 		= 'Pourcentage';
@@ -27,6 +36,7 @@ dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
 for k = 1:nombre_images
 	[dy_I, dx_I] = gradient(I(:,:,k));
+	%[dy_I, dx_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
 	dx_I_k(:,:,k) = dx_I;
 	dy_I_k(:,:,k) = dy_I;
 end
@@ -70,7 +80,7 @@ for i = 1:nombre_z
 
 	% Changements de repère
 	for k = 1:nombre_images-1
-		P_k(:,:,k+1) = inv(R(:,:,k)) * P_k(:,:,1);
+		P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1);
 		i_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
 		j_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
 	end
@@ -78,7 +88,7 @@ for i = 1:nombre_z
 	% Vérification des pixels hors images
 	condition_image = ones(size(i_k(:,1)));
 	for k = 1:nombre_images-1
-		condition_image = condition_image & i_k(:,k+1) > 0 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0 & j_k(:,k+1) <= size(masque,2);
+		condition_image = condition_image & i_k(:,k+1) > 0.5 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= size(masque,2);
 	end
 
 	% Calcul des gradients
@@ -96,8 +106,8 @@ for i = 1:nombre_z
 	B_1 = [];
 	B_2 = [];
 	for k = 1:nombre_images-1
-		A(k,:) = R(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		b = [grad_I_x(1,:); grad_I_y(1,:)] - R(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		A(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		b = [grad_I_x(1,:); grad_I_y(1,:)] - R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 		B_1(k,:) = b(1,:);
 		B_2(k,:) = b(2,:);
 	end
@@ -138,7 +148,7 @@ for i = 1:nombre_z
 	z_1_decales_vec = reshape(z_1_decales',1,size(z_1_decales,1)*size(z_1_decales,2));
 	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 	for k = 1:nombre_images-1
-		P_2_voisinage = inv(R(:,:,k)) * P_1_voisinage;
+		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage;
 		%P_2_voisinage_ok = zeros(3*nombre_pixels_etudies,taille_patch);
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
 		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
@@ -173,6 +183,7 @@ for i = 1:nombre_z
 		-P_k(:,ind_debug,1)
 		d_equation_plan(ind_debug)
 		z_1_decales(ind_debug,:)
+		disp("here")
 		i_2_voisinage(ind_debug,:)
 		j_2_voisinage(ind_debug,:)
 		I_1_voisinage(ind_debug,:)

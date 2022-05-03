@@ -6,31 +6,41 @@ L = taille_ecran(3);
 H = taille_ecran(4);
 
 %% Données
-load ../../data/donnees_calotte;
+load ../../data/simulateur_formate.mat;
 % Indices des images
-indice_premiere_image = 1;
+indice_premiere_image = 5;
 indice_deuxieme_image = 2;
+% Les profondeurs
+Z_1 = z(:,:,indice_premiere_image);
 % Les images
 I_1 = I(:,:,indice_premiere_image);
 I_2 = I(:,:,indice_deuxieme_image);
-% Les tailles
-[nombre_lignes, nombre_colonnes] = size(I_1);
-% Les masques des images
+% TODO Normales
+N_1 = zeros(nombre_lignes, nombre_colonnes,3);
+% Les masques
 masque_1 = masque(:,:,indice_premiere_image);
 masque_2 = masque(:,:,indice_deuxieme_image);
 % La pose
-R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)'
-t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image)
+R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
+t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
+H = [1 0 0 ; 0 1 0 ; 0 0 0];
+R_1 = R(:,:,indice_premiere_image);
+R_2 = R(:,:,indice_deuxieme_image);
+P_0_1 = K * [H * R_1(:,:) , t(:,indice_premiere_image)];
+P_1_0 = pinv(P_0_1);
+P_0_2 = K * [H * R_2(:,:) , t(:,indice_deuxieme_image)];
 % Le gradient de l'image 2
 [dx_I_1, dy_I_1] = gradient(I_1);
 [dx_I_2, dy_I_2] = gradient(I_2);
 
 %% Paramètres
-valeurs_z			= 80:1:140;		% Les valeurs de profondeurs testées
 rayon_voisinage		= 1;			% Voisinage carré à prendre en compte
 affichage_log		= 1;			% Affichage d'informations diverses
 interpolation		= 'nearest';	% Type d'interpolation
-seuil_denominateur	= 1e-3;			% Seuil pour accepter la division
+seuil_denominateur	= 0;			% Seuil pour accepter la division
+facteur = 460 * (4/3) * (1/3) ;
+%facteur = f;
+facteur = 1;
 
 %% Algorithme
 while (1)
@@ -42,20 +52,21 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
-	i_1 = 205;
-	j_1 = 142;
+	i_1 = 253;
+	j_1 = 176;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
-	z = round(Z_1(i_1,j_1));
+	z = Z_1(i_1,j_1);
 
 	% Changements de repère
 	u_1 = j_1 - u_0;
-	v_1 = i_1 - u_0;
-	P_1	= [u_1; v_1; z];
+	v_1 = i_1 - v_0;
+	P_1	= [u_1 / facteur ; v_1 / facteur ; z];
 	P_2 = R_1_2 * P_1 + t_1_2;
-	u_2 = P_2(1);
-	v_2 = P_2(2);
+	%P_2 = P_0_2 * P_1_0 * P_1;
+	u_2 = P_2(1) * facteur;
+	v_2 = P_2(2) * facteur;
 	i_2 = v_2 + v_0;
 	j_2 = u_2 + u_0;
 	if (affichage_log)
@@ -72,7 +83,8 @@ while (1)
 
 		grad_I_2 		= [interp2(dx_I_2,j_2,i_2,interpolation); interp2(dy_I_2,j_2,i_2,interpolation)];
 		numerateur_pq 	= grad_I_1 - R_1_2(1:2,1:2)' * grad_I_2;
-		denominateur_pq = R_1_2(1:2,3)' * grad_I_2;
+		denominateur_pq = R_1_2(1:2,3)' * grad_I_2
+		denominateur_pq = 2
 
 		% Si pas de division par 0, on continue
 		if (abs(denominateur_pq) > seuil_denominateur)
@@ -94,8 +106,8 @@ while (1)
 			d_equation_plan = -P_1' * normale;
 
 			% Calcul de la transformation géométrique
-			u_1_decales = j_1-u_0-rayon_voisinage:j_1-u_0+rayon_voisinage;
-			v_1_decales = i_1-v_0-rayon_voisinage:i_1-v_0+rayon_voisinage;
+			u_1_decales = (j_1-u_0-rayon_voisinage)/facteur:(1/facteur):(j_1-u_0+rayon_voisinage)/facteur;
+			v_1_decales = (i_1-v_0-rayon_voisinage)/facteur:(1/facteur):(i_1-v_0+rayon_voisinage)/facteur;
 			[u_1_decales, v_1_decales] = meshgrid(u_1_decales,v_1_decales);
 			z_1_decales = -(d_equation_plan + normale(1) * u_1_decales(:) + normale(2) * v_1_decales(:)) / normale(3);
 			if (affichage_log)
@@ -107,8 +119,8 @@ while (1)
 			% Reprojection du voisinage
 			P_1_voisinage = [u_1_decales(:)' ; v_1_decales(:)' ; z_1_decales'];
 			P_2_voisinage = R_1_2 * P_1_voisinage + t_1_2;
-			i_2_voisinage = P_2_voisinage(2,:) + v_0;
-			j_2_voisinage = P_2_voisinage(1,:) + u_0;
+			i_2_voisinage = P_2_voisinage(2,:) * facteur + v_0;
+			j_2_voisinage = P_2_voisinage(1,:) * facteur + u_0;
 			if (affichage_log)
 				disp("===== Les i du voisinage")
 				i_2_voisinage_re = reshape(i_2_voisinage, 2*rayon_voisinage+1, 2*rayon_voisinage+1)
