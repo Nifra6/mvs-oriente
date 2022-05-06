@@ -3,9 +3,10 @@ clear;
 close all;
 
 %% Imports
-addpath(genpath('../toolbox'));
+addpath(genpath('../toolbox/'));
 
 %% Données
+% Fichier des données
 load ../../data/donnees_calotte;
 % Taille des images
 [nombre_lignes, nombre_colonnes, nombre_images] = size(I);
@@ -18,18 +19,19 @@ end
 % Filtrage des pixels considérés par le masque
 [i_k, j_k]  = find(masque(:,:,1));
 ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
+ind			= ind_1;
 nombre_pixels_etudies = size(ind_1,1);
 P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
 P_k(:,:,1) 	= [i_k - u_0, j_k - v_0, zeros(length(i_k), 1)].';
 
 %% Paramètres
-valeurs_z   	= 60:1:120;
-interpolation 	= 'nearest';
-estimateur		= 'MSE';
-affichage 		= 'Pourcentage';
-affichage_debug = 1;
-rayon_voisinage = 1;
-taille_patch 	= (2*rayon_voisinage + 1)^2;
+valeurs_z   	= 60:1:120;						% Valeurs de profondeurs testées
+interpolation 	= 'nearest';					% Type d'interpolation
+estimateur		= 'MSE';						% Estimateur utilisé pour l'évaluation des erreurs
+affichage 		= 'Pourcentage';				% Type d'affichage de la progression
+affichage_debug = 1;							% Affichage d'informations diverses
+rayon_voisinage = 1;							% Rayon du voisinage carré à prendre en compte
+taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
@@ -88,7 +90,7 @@ for i = 1:nombre_z
 	% Vérification des pixels hors images
 	condition_image = ones(size(i_k(:,1)));
 	for k = 1:nombre_images-1
-		condition_image = condition_image & i_k(:,k+1) > 0.5 & i_k(:,k+1) <= size(masque,1) & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= size(masque,2);
+		condition_image = condition_image & i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nombre_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nombre_colonnes;
 	end
 
 	% Calcul des gradients
@@ -102,22 +104,22 @@ for i = 1:nombre_z
 	end
 
 	% Calcul des numérateurs et dénominateurs
-	A 	= [];
-	B_1 = [];
-	B_2 = [];
+	denominateur = [];
+	numerateur_x = [];
+	numerateur_y = [];
 	for k = 1:nombre_images-1
-		A(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		b = [grad_I_x(1,:); grad_I_y(1,:)] - R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		B_1(k,:) = b(1,:);
-		B_2(k,:) = b(2,:);
+		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
+		numerateur_x(k,:) = numerateur(1,:);
+		numerateur_y(k,:) = numerateur(2,:);
+		denominateur(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 	end
 
 	% Calcul des coefficients p et q
 	p_q = 0;	
 	for k = 1:nombre_images-1
-		p_q = p_q + A(k,:) .* [B_1(k,:); B_2(k,:)];
+		p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
 	end
-	p_q 	= p_q ./ sum(A.^2, 1);
+	p_q 	= p_q ./ sum(denominateur.^2, 1);
 	p_estim = -p_q(1, :);	% Attention au - en facteur, par rapport à l'orientation de l'axe z
 	q_estim = -p_q(2, :);
 
@@ -149,7 +151,6 @@ for i = 1:nombre_z
 	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 	for k = 1:nombre_images-1
 		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage;
-		%P_2_voisinage_ok = zeros(3*nombre_pixels_etudies,taille_patch);
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
 		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
 		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);
@@ -177,13 +178,14 @@ for i = 1:nombre_z
 		Z_1(i_k(ind_debug),j_k(ind_debug))
 		i_1_decales(ind_debug,:)
 		j_1_decales(ind_debug,:)
+		disp("===== Pente et normale")
 		size(p_estim)
 		[p_estim(ind_debug) q_estim(ind_debug)]
 		normale(:,ind_debug)
 		-P_k(:,ind_debug,1)
 		d_equation_plan(ind_debug)
 		z_1_decales(ind_debug,:)
-		disp("here")
+		disp("===== Voisinages sur les images témoins")
 		i_2_voisinage(ind_debug,:)
 		j_2_voisinage(ind_debug,:)
 		I_1_voisinage(ind_debug,:)

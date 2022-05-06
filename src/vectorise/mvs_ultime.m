@@ -35,35 +35,15 @@ affichage_debug = 1;							% Affichage d'informations diverses
 rayon_voisinage = 1;							% Rayon du voisinage carré à prendre en compte
 taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
 
-%% Calcul des gradients
-dx_I_k = zeros(size(I));
-dy_I_k = zeros(size(I));
-for k = 1:nombre_images
-	[dx_I, dy_I] = gradient(I(:,:,k));
-	%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
-	dx_I_k(:,:,k) = dx_I;
-	dy_I_k(:,:,k) = dy_I;
-end
-dx_I_1 = dx_I_k(:,:,1);
-dy_I_1 = dy_I_k(:,:,1);
-grad_I_1 	= [ dx_I_1(ind_1) , dy_I_1(ind_1) ].';
-grad_I_x	= [dx_I_1(ind_1)'];
-grad_I_y    = [dy_I_1(ind_1)'];
-
 %% Construction du voisinage
 voisinage_ligne = -rayon_voisinage*nombre_lignes:nombre_lignes:rayon_voisinage*nombre_lignes;
 voisinage_colonne = -rayon_voisinage:rayon_voisinage;
 grille_voisinage = voisinage_ligne + voisinage_colonne';
 grille_voisinage = grille_voisinage';
 
-%% Mise en forme des normales
-normale_theorique = [N_1(ind_1)' ; N_1(ind_1 + nombre_pixels)' ; N_1(ind_1 + 2*nombre_pixels)'];
-
-
 %% Boucle de reconstruction
 nombre_z = length(valeurs_z);
 erreurs	= 10*ones(length(i_k), nombre_z);
-erreurs_angulaires	= zeros(length(i_k), nombre_z);
 
 tic
 fprintf("\n")
@@ -102,51 +82,17 @@ for i = 1:nombre_z
 		i_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* i_k(:,k+1);
 		j_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* j_k(:,k+1);
 		% P'têt une carabistouille ci-dessus
-		grad_I_x(k+1,:) = interp2(dx_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
-		grad_I_y(k+1,:) = interp2(dy_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
 		i_k(:,k+1) = round(i_k(:,k+1));
 		j_k(:,k+1) = round(j_k(:,k+1));
 		ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
 	end
 
-	% Calcul des numérateurs et dénominateurs
-	denominateur = [];
-	numerateur_x = [];
-	numerateur_y = [];
-	for k = 1:nombre_images-1
-		numerateur = [grad_I_x(1,:); grad_I_y(1,:)] - R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-		numerateur_x(k,:) = numerateur(1,:);
-		numerateur_y(k,:) = numerateur(2,:);
-		denominateur(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-	end
-
-	% Calcul des coefficients p et q
-	p_q = 0;	
-	for k = 1:nombre_images-1
-		p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
-	end
-	p_q 	= p_q ./ sum(denominateur.^2, 1);
-	p_estim = p_q(1, :);
-	q_estim = p_q(2, :);
-
-	% Calcul de la normale
-	normale = [p_estim ; q_estim ; -ones(1,nombre_pixels_etudies)] ./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nombre_pixels_etudies));
-	erreur_angulaire = (180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)));
-	erreurs_angulaires(:,i) = erreur_angulaire';
-
-	% Calcul du plan considéré
-	d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
-	
 	% Calcul de la transformation géométrique
 	ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 	[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
 	u_1_decales = j_1_decales-u_0;
 	v_1_decales = i_1_decales-v_0;
-
-	normale_1 = repmat(normale(1,:)',1,taille_patch);
-	normale_2 = repmat(normale(2,:)',1,taille_patch);
-	normale_3 = repmat(normale(3,:)',1,taille_patch);
-	z_1_decales = -(d_equation_plan' + normale_1.*u_1_decales + normale_2.*v_1_decales)./normale_3;
+	z_1_decales = valeur_z * ones(size(u_1_decales));
 
 	% Reprojection du voisinage
 	i_2_voisinage = zeros(nombre_pixels_etudies, taille_patch, nombre_images-1);
@@ -164,12 +110,12 @@ for i = 1:nombre_z
 
 	% Calcul de l'erreur
 	I_1_voisinage = interp2(I(:,:,1),j_1_decales,i_1_decales,interpolation);
-	erreur_k = zeros(nombre_pixels_etudies, nombre_images-1);
+	erreur_k = ones(nombre_pixels_etudies, nombre_images-1);
 	for k = 1:nombre_images-1
 		I_k_voisinage = interp2(I(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
 		erreur_k(:,k) = sum((I_1_voisinage-I_k_voisinage).^2,2);
 	end
-	erreur_k = erreur_k + 10 * condition_image;
+	erreur_k = erreur_k + 100 * (1 - condition_image);
 	switch (estimateur)
 		case 'MSE'
 			erreurs(:,i) = (1 / nombre_images) * sum(erreur_k.^2,2);
@@ -179,22 +125,16 @@ for i = 1:nombre_z
 
 
 	% Affichage debug
-	ind_debug = 12543;
+	ind_debug = 12537;
 	if (affichage_debug && round(valeur_z) == round(Z_1(i_k(ind_debug),j_k(ind_debug))))
 		[i_k(ind_debug) j_k(ind_debug)]
 		Z_1(i_k(ind_debug),j_k(ind_debug))
 		i_1_decales(ind_debug,:)
 		j_1_decales(ind_debug,:)
-		disp("===== Pente et normale")
-		[p_estim(ind_debug) q_estim(ind_debug)]
-		normale(:,ind_debug)
-		N_1(i_k(ind_debug), j_k(ind_debug), :)
-		erreur_angulaire(ind_debug)
-		-P_k(:,ind_debug,1)
-		d_equation_plan(ind_debug)
-		z_1_decales(ind_debug,:)
 		disp("===== Voisinages sur les images témoins")
+		i_k(ind_debug,:)
 		i_2_voisinage(ind_debug,:)
+		j_k(ind_debug,:)
 		j_2_voisinage(ind_debug,:)
 		I_1_voisinage(ind_debug,:)
 		I_k_voisinage(ind_debug,:)
@@ -216,13 +156,6 @@ erreurs_corrigees = erreurs;
 z_in = transpose(valeurs_z(indices_min));
 z = zeros(nombre_lignes, nombre_colonnes);
 z(ind_1) = z_in;
-
-% Sélections des erreurs angulaires
-angles = ones(nombre_lignes, nombre_colonnes);
-max(angles,[],'all');
-max(erreurs_angulaires,[],'all');
-angles(ind_1) = abs(erreurs_angulaires(sub2ind((1:nombre_pixels_etudies)',indices_min)));
-max(angles,[],'all');
 
 % Mesures
 disp("==============")

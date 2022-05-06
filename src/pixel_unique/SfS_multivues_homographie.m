@@ -7,19 +7,23 @@ H = taille_ecran(4);
 
 %% Données
 load ../../data/donnees_calotte;
+% Indices des images
+indice_premiere_image = 1;
+indice_deuxieme_image = 2;
 % Les images
-I_1 = I(:,:,1);
-I_2 = I(:,:,2);
+I_1 = I(:,:,indice_premiere_image);
+I_2 = I(:,:,indice_deuxieme_image);
 % Les masques des images
-masque_1 = masque(:,:,1);
-masque_2 = masque(:,:,2);
+masque_1 = masque(:,:,indice_premiere_image);
+masque_2 = masque(:,:,indice_deuxieme_image);
 % La pose
-R_2 = R(:,:,1)';
-t_2 = t(:,1);
+R_2 = R(:,:,indice_premiere_image)';
+t_2 = t(:,indice_deuxieme_image);
 % Le gradient de l'image 2
-dx_I_2 = dx_I(:,:,2);
-dy_I_2 = dy_I(:,:,2);
-%[dy_I_2, dx_I_2] = gradient(I_2);
+%dx_I_2 = dx_I(:,:,indice_deuxieme_image);
+%dy_I_2 = dy_I(:,:,indice_deuxieme_image);
+[dy_I_1, dx_I_1] = gradient(I_1);
+[dy_I_2, dx_I_2] = gradient(I_2);
 
 %% Paramètres
 valeurs_z 		= 60:1:120;	% Les valeurs de profondeurs utilisées
@@ -36,6 +40,8 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
+	i_1 = 142;
+	j_1 = 199;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur

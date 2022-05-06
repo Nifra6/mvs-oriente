@@ -1,16 +1,25 @@
 %% Clear
 clear;
 close all;
+taille_ecran = get(0,'ScreenSize');
+L = taille_ecran(3);
+H = taille_ecran(4);
 
 %% Imports
 addpath(genpath('../toolbox/'));
 
 %% Données
 % Fichier des données
-load ../../data/donnees_calotte;
+load ../../data/simulateur_formate.mat;
 % Taille des images
 [nombre_lignes, nombre_colonnes, nombre_images] = size(I);
 nombre_pixels = nombre_lignes * nombre_colonnes;
+nombre_images = 3;
+facteur_k = 451*(4/3^2);					% Facteur pix.m^{-1}
+% Les profondeurs
+Z_1 = z(:,:,1);
+% TODO Normales
+N_1 = zeros(nombre_lignes, nombre_colonnes, 3);
 % Les poses relatives
 R_1_k = zeros(3,3,nombre_images-1);
 t_1_k = zeros(3,nombre_images-1);
@@ -24,16 +33,33 @@ ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
 ind			= ind_1;
 nombre_pixels_etudies = size(ind_1,1);
 P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
-P_k(:,:,1) 	= [j_k - u_0, i_k - v_0, zeros(length(i_k), 1)].';
+P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_k), 1)].';
 
 %% Paramètres
-valeurs_z   	= 80:1:140;						% Valeurs de profondeurs testées
+valeurs_z   	= min(Z_1,[],'all'):0.01:max(Z_1,[],'all');					% Valeurs de profondeurs testées
 interpolation 	= 'nearest';					% Type d'interpolation
 estimateur		= 'MSE';						% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Pourcentage';				% Type d'affichage de la progression
-affichage_debug = 1;							% Affichage d'informations diverses
-rayon_voisinage = 1;							% Rayon du voisinage carré à prendre en compte
+affichage_debug = 0;							% Affichage d'informations diverses
+rayon_voisinage = 50;							% Rayon du voisinage carré à prendre en compte
 taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
+
+%% Changements masques
+for k = 1:1
+	masque(1:rayon_voisinage,:,k) = 0;
+	masque(end-rayon_voisinage:end,:,k) = 0;
+	masque(:,1:rayon_voisinage,k) = 0;
+	masque(:,end-rayon_voisinage:end,k) = 0;
+end
+rayon_voisinage = 3;
+taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
+% Filtrage des pixels considérés par le masque
+[i_k, j_k]  = find(masque(:,:,1));
+ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
+ind			= ind_1;
+nombre_pixels_etudies = size(ind_1,1);
+P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
+P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_k), 1)].';
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
@@ -87,8 +113,8 @@ for i = 1:nombre_z
 	% Changements de repère
 	for k = 1:nombre_images-1
 		P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-		i_k(:,k+1) = (P_k(2,:,k+1) + v_0).';
-		j_k(:,k+1) = (P_k(1,:,k+1) + u_0).';
+		i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + v_0).';
+		j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + u_0).';
 	end
 
 	% Vérification des pixels hors images
@@ -140,8 +166,8 @@ for i = 1:nombre_z
 	% Calcul de la transformation géométrique
 	ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 	[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
-	u_1_decales = j_1_decales-u_0;
-	v_1_decales = i_1_decales-v_0;
+	u_1_decales = (j_1_decales-u_0) / facteur_k ;
+	v_1_decales = (i_1_decales-v_0) / facteur_k;
 
 	normale_1 = repmat(normale(1,:)',1,taille_patch);
 	normale_2 = repmat(normale(2,:)',1,taille_patch);
@@ -158,8 +184,8 @@ for i = 1:nombre_z
 	for k = 1:nombre_images-1
 		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
 		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
-		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) + v_0);
-		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) + u_0);
+		i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) * facteur_k + v_0);
+		j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) * facteur_k + u_0);
 	end
 
 	% Calcul de l'erreur
@@ -169,7 +195,7 @@ for i = 1:nombre_z
 		I_k_voisinage = interp2(I(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
 		erreur_k(:,k) = sum((I_1_voisinage-I_k_voisinage).^2,2);
 	end
-	erreur_k = erreur_k + 10 * condition_image;
+	erreur_k = erreur_k + 10 * (1 - condition_image);
 	switch (estimateur)
 		case 'MSE'
 			erreurs(:,i) = (1 / nombre_images) * sum(erreur_k.^2,2);
@@ -211,32 +237,32 @@ toc
 %% Résultats
 % Sélections des profondeurs avec l'erreur minimale
 erreurs_corrigees = (erreurs ~= 0) .* erreurs + (erreurs == 0) .* ones(size(erreurs));
-erreurs_corrigees = erreurs;
+%erreurs_corrigees = erreurs;
 [~,indices_min] = min(erreurs_corrigees,[],2);
 z_in = transpose(valeurs_z(indices_min));
 z = zeros(nombre_lignes, nombre_colonnes);
 z(ind_1) = z_in;
 
 % Sélections des erreurs angulaires
-angles = ones(nombre_lignes, nombre_colonnes);
-max(angles,[],'all');
-max(erreurs_angulaires,[],'all');
-angles(ind_1) = abs(erreurs_angulaires(sub2ind((1:nombre_pixels_etudies)',indices_min)));
-max(angles,[],'all');
+% angles = ones(nombre_lignes, nombre_colonnes);
+% max(angles,[],'all');
+% max(erreurs_angulaires,[],'all');
+% angles(ind_1) = abs(erreurs_angulaires(sub2ind((1:nombre_pixels_etudies)',indices_min)));
+% max(angles,[],'all');
 
 % Mesures
 disp("==============")
 disp("Mesure relative de profondeur")
 sum(abs(Z_1(ind_1) - z(ind_1)),'all') / size(z_in,1)
-ecart_moyen = sum(Z_1(find(masque(:,:,1))) - z_in) / size(z_in,1);
-disp("Mesure relative de forme")
-sum(abs(Z_1(ind_1) - (z(ind_1) + ecart_moyen)),'all') / size(z_in,1)
+%ecart_moyen = sum(Z_1(find(masque(:,:,1))) - z_in) / size(z_in,1);
+%disp("Mesure relative de forme")
+%sum(abs(Z_1(ind_1) - (z(ind_1) + ecart_moyen)),'all') / size(z_in,1)
 
-% Préparation de l'affichage
+% Préparation
 X = 1:nombre_colonnes;
-X = (X - u_0);
+X = (X - u_0) / facteur_k;
 Y = 1:nombre_lignes;
-Y = (Y - v_0);
+Y = (Y - v_0) / facteur_k;
 [X,Y] = meshgrid(X,Y);
 
 % Affichage

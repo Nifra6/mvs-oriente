@@ -8,7 +8,7 @@ H = taille_ecran(4);
 %% Données
 load ../../data/simulateur_formate.mat;
 % Indices des images
-indice_premiere_image = 5;
+indice_premiere_image = 1;
 indice_deuxieme_image = 2;
 % Les profondeurs
 Z_1 = z(:,:,indice_premiere_image);
@@ -16,19 +16,13 @@ Z_1 = z(:,:,indice_premiere_image);
 I_1 = I(:,:,indice_premiere_image);
 I_2 = I(:,:,indice_deuxieme_image);
 % TODO Normales
-N_1 = zeros(nombre_lignes, nombre_colonnes,3);
+N_1 = N(:,:,:,indice_premiere_image);
 % Les masques
 masque_1 = masque(:,:,indice_premiere_image);
 masque_2 = masque(:,:,indice_deuxieme_image);
 % La pose
 R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
-H = [1 0 0 ; 0 1 0 ; 0 0 0];
-R_1 = R(:,:,indice_premiere_image);
-R_2 = R(:,:,indice_deuxieme_image);
-P_0_1 = K * [H * R_1(:,:) , t(:,indice_premiere_image)];
-P_1_0 = pinv(P_0_1);
-P_0_2 = K * [H * R_2(:,:) , t(:,indice_deuxieme_image)];
 % Le gradient de l'image 2
 [dx_I_1, dy_I_1] = gradient(I_1);
 [dx_I_2, dy_I_2] = gradient(I_2);
@@ -38,9 +32,8 @@ rayon_voisinage		= 1;			% Voisinage carré à prendre en compte
 affichage_log		= 1;			% Affichage d'informations diverses
 interpolation		= 'nearest';	% Type d'interpolation
 seuil_denominateur	= 0;			% Seuil pour accepter la division
-facteur = 460 * (4/3) * (1/3) ;
-%facteur = f;
-facteur = 1;
+%facteur = 460 * (4/3) * (1/3) ;
+facteur = 451 * (4/3) * (1/3) ;
 
 %% Algorithme
 while (1)
@@ -52,8 +45,6 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
-	i_1 = 253;
-	j_1 = 176;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
@@ -64,7 +55,6 @@ while (1)
 	v_1 = i_1 - v_0;
 	P_1	= [u_1 / facteur ; v_1 / facteur ; z];
 	P_2 = R_1_2 * P_1 + t_1_2;
-	%P_2 = P_0_2 * P_1_0 * P_1;
 	u_2 = P_2(1) * facteur;
 	v_2 = P_2(2) * facteur;
 	i_2 = v_2 + v_0;
@@ -84,7 +74,6 @@ while (1)
 		grad_I_2 		= [interp2(dx_I_2,j_2,i_2,interpolation); interp2(dy_I_2,j_2,i_2,interpolation)];
 		numerateur_pq 	= grad_I_1 - R_1_2(1:2,1:2)' * grad_I_2;
 		denominateur_pq = R_1_2(1:2,3)' * grad_I_2
-		denominateur_pq = 2
 
 		% Si pas de division par 0, on continue
 		if (abs(denominateur_pq) > seuil_denominateur)

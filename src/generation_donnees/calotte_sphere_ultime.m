@@ -42,14 +42,14 @@ S = [ 0 ; 0 ; 1 ];
 
 % Angles de rotations
 %angles = [-pi/6 0 ; 0 -pi/6 ; pi/12 -pi/17; -pi/19 pi/7];
-%angles = [-pi/6 0 ; 0 -pi/6];
+angles = [-pi/6 0 ; 0 -pi/6];
 
 % Tirage aléatoire des angles
-nombre_tirage = 10;
-angles = zeros(nombre_tirage,2);
-for k = 1: nombre_tirage
-	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
-end
+%nombre_tirage = 5;
+%angles = zeros(nombre_tirage,2);
+%for k = 1: nombre_tirage
+%	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
+%end
 
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images
@@ -90,9 +90,6 @@ for i_1 = 1:taille
 			n_1 = P_1/rayon_sphere;
 			ombrage = n_1'*S;
 			N_1(i_1,j_1,:) = n_1 / norm(n_1);
-			%temp = N_1(i_1,j_1,2);
-			%N_1(i_1,j_1,2) = N_1(i_1,j_1,1);
-			%N_1(i_1,j_1,1) = N_1(i_1,j_1,2);
 			N_1(i_1,j_1,3) = -N_1(i_1,j_1,3);
 			if ombrage < 0
 				disp('Attention : ombres propres !');
@@ -148,7 +145,7 @@ for k = 1:size(angles,1)
 						disp('Attention : parties cachees !');
 						return;
 					end
-					masque(i_k,j_k,2) 	= 1;
+					masque(i_k,j_k,k+1)	= 1;
 					n_1 				= P_1 / rayon_sphere;
 					ombrage 			= n_1' * S;
 					if ombrage < 0

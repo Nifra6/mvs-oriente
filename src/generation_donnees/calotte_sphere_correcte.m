@@ -145,7 +145,7 @@ for k = 1:size(angles,1)
 						disp('Attention : parties cachees !');
 						return;
 					end
-					masque(i_k,j_k,2) 	= 1;
+					masque(i_k,j_k,k+1)	= 1;
 					n_1 				= P_1 / rayon_sphere;
 					ombrage 			= n_1' * S;
 					if ombrage < 0
@@ -180,9 +180,4 @@ for k = 1:size(angles,1)
 
 end
 
-
-%% Préparation des données pour usage
-%for k = 1:size(angles,1)
-%	R(:,:,k) = transpose(R(:,:,k));
-%end
 save ../../data/donnees_calotte;

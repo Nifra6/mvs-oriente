@@ -22,5 +22,8 @@ t = squeeze(params.w2cPoses(:,4,:));
 % Les profondeurs
 z = depthMaps;
 
+% Les normales
+N = normalMaps;
 
-save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'K', 'u_0', 'v_0', 'f', 'I', 'masque', 'R', 't', 'z');
+
+save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'K', 'u_0', 'v_0', 'f', 'I', 'masque', 'R', 't', 'z', 'N');

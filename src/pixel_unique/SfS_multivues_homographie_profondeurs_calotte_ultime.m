@@ -9,7 +9,7 @@ H = taille_ecran(4);
 load ../../data/donnees_calotte;
 % Indices des images
 indice_premiere_image = 1;
-indice_deuxieme_image = 2;
+indice_deuxieme_image = 4;
 % Les images
 I_1 = I(:,:,indice_premiere_image);
 I_2 = I(:,:,indice_deuxieme_image);
@@ -47,6 +47,8 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
+	%i_1 = 199;
+	%j_1 = 142;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur

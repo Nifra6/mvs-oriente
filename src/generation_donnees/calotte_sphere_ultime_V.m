@@ -20,6 +20,7 @@ alpha			= 0.7;					% Proportion entre les rayons des silhouettes
 rayon_calotte 	= alpha*rayon_sphere;	% Rayon de la calotte
 
 % Paramètres de la caméra
+eloignement_camera = rayon_sphere + 100;
 f 		= 1;							% Distance focale
 u_0 	= C_x;							% Coordonnées du point principal
 v_0		= C_y;
@@ -30,7 +31,7 @@ K_inv 	= [1/f 0 -u_0/f ; 0 1/f -v_0/f ; 0 0 1];
 %% Préparation de la scène
 
 % Matrices de coordonnées (abscisses orientées vers le bas, ordonnées vers la droite) :
-[Y,X]		= meshgrid(1:taille,1:taille);
+[X,Y]		= meshgrid(1:taille,1:taille);
 X			= X-C_x;
 Y			= Y-C_y;
 valeurs_X	= (1:taille)-C_x;
@@ -40,34 +41,39 @@ valeurs_Y	= (1:taille)-C_y;
 S = [ 0 ; 0 ; 1 ];
 
 % Angles de rotations
-angles = [-pi/6 0 ; 0 -pi/6 ; pi/12 -pi/17; -pi/19 pi/7];
+%angles = [-pi/6 0 ; 0 -pi/6 ; pi/12 -pi/17; -pi/19 pi/7];
 %angles = [-pi/6 0 ; 0 -pi/6];
 
 % Tirage aléatoire des angles
-%nombre_tirage = 10;
-%angles = zeros(nombre_tirage,2);
-%for k = 1: nombre_tirage
-%	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
-%end
+nombre_tirage = 5;
+angles = zeros(nombre_tirage,2);
+for k = 1: nombre_tirage
+	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
+end
 
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images
 masque 	= zeros(taille, taille, size(angles,1)+1);		% Ensemble des masques
-R       = zeros(3,3,size(angles,1));
-t		= zeros(3,size(angles,1));
+R       = zeros(3,3,size(angles,1)+1);
+t		= zeros(3,size(angles,1)+1);
+
+% Translation et rotation de la première caméra
+R(:,:,1) = eye(3);
+t(:,1) = [0 ; 0 ; eloignement_camera];
 
 % Rotation entre les deux poses de la caméra, supposée orthogonale :
 for k = 1:size(angles,1)
 	angle_k = angles(k,:);
-	R(:,:,k) = [cos(angle_k(2))                , 0               ,  sin(angle_k(2));...
+	R(:,:,k+1) = [cos(angle_k(2))                , 0               ,  sin(angle_k(2));...
 			sin(angle_k(1))  * sin(angle_k(2)) , cos(angle_k(1)) , -sin(angle_k(1)) * cos(angle_k(2));...
 			-cos(angle_k(1)) * sin(angle_k(2)) , sin(angle_k(1)) ,  cos(angle_k(1)) * cos(angle_k(2))];
+	t(:,k+1) = [0 ; 0 ; eloignement_camera];
 end
 
 %% Calcul de l'image alignée
 
 % Calcul de la première image et de son gradient :
-Z_1 = zeros(taille,taille);			% Hauteur de la calotte
+Z_1 = 1e5*ones(taille,taille);		% Hauteur de la calotte
 dx_I_1 = zeros(taille,taille);		% Dérivée en x de I_1
 dy_I_1 = zeros(taille,taille);		% Dérivée en y de I_1
 N_1 = zeros(taille,taille,3);		% Normale
@@ -79,11 +85,12 @@ for i_1 = 1:taille
 		if rho_carre_1 <= rayon_calotte^2
 			masque(i_1,j_1,1) = 1;
 			z_1 = sqrt(rayon_sphere^2-rho_carre_1);
-			Z_1(i_1,j_1) = z_1;
+			Z_1(i_1,j_1) = eloignement_camera - z_1;
 			P_1 = [ x_1 ; y_1 ; z_1 ];
 			n_1 = P_1/rayon_sphere;
 			ombrage = n_1'*S;
 			N_1(i_1,j_1,:) = n_1 / norm(n_1);
+			N_1(i_1,j_1,3) = -N_1(i_1,j_1,3);
 			if ombrage < 0
 				disp('Attention : ombres propres !');
 				return;
@@ -131,14 +138,14 @@ for k = 1:size(angles,1)
 			if rho_carre_k <= rayon_sphere^2
 				z_k 		= sqrt(rayon_sphere^2 - rho_carre_k);
 				P_k 		= [ x_k ; y_k ; z_k ];
-				P_1 		= R(:,:,k) * P_k;
+				P_1 		= R(:,:,k+1) * P_k;
 				rho_carre_1 = P_1(1)^2 + P_1(2)^2;
 				if rho_carre_1 <= rayon_calotte^2
 					if P_1(3) < 0
 						disp('Attention : parties cachees !');
 						return;
 					end
-					masque(i_k,j_k,k+1) 	= 1;
+					masque(i_k,j_k,k+1)	= 1;
 					n_1 				= P_1 / rayon_sphere;
 					ombrage 			= n_1' * S;
 					if ombrage < 0
@@ -174,8 +181,4 @@ for k = 1:size(angles,1)
 end
 
 
-%% Préparation des données pour usage
-%for k = 1:size(angles,1)
-%	R(:,:,k) = inv(R(:,:,k));
-%end
 save ../../data/donnees_calotte;

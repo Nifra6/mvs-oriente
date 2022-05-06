@@ -9,7 +9,7 @@ H = taille_ecran(4);
 load ../../data/donnees_calotte;
 % Indices des images
 indice_premiere_image = 1;
-indice_deuxieme_image = 2;
+indice_deuxieme_image = 6;
 % Les images
 I_1 = I(:,:,indice_premiere_image);
 I_2 = I(:,:,indice_deuxieme_image);
@@ -19,8 +19,8 @@ I_2 = I(:,:,indice_deuxieme_image);
 masque_1 = masque(:,:,indice_premiere_image);
 masque_2 = masque(:,:,indice_deuxieme_image);
 % La pose
-R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)'
-t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image)
+R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
+t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
 % Le gradient de l'image 2
 [dx_I_1, dy_I_1] = gradient(I_1);
 [dx_I_2, dy_I_2] = gradient(I_2);
@@ -30,7 +30,7 @@ valeurs_z			= 80:1:140;		% Les valeurs de profondeurs testées
 rayon_voisinage		= 1;			% Voisinage carré à prendre en compte
 affichage_log		= 1;			% Affichage d'informations diverses
 interpolation		= 'nearest';	% Type d'interpolation
-seuil_denominateur	= 1e-3;			% Seuil pour accepter la division
+seuil_denominateur	= 0;			% Seuil pour accepter la division
 
 %% Algorithme
 while (1)
@@ -42,7 +42,7 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
-	i_1 = 205;
+	i_1 = 199;
 	j_1 = 142;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
@@ -66,10 +66,12 @@ while (1)
 
 	% Vérification si pixel hors image
 	condition_image = i_2 > 0 & i_2 <= nombre_lignes & j_2 > 0 & j_2 <= nombre_colonnes;
+	disp("miaou")
 
 	% Si le point reprojeté tombe sur le masque de la deuxième image
-	if condition_image & masque_2(round(i_2),round(j_2))
+	if condition_image
 
+		disp("nyan")
 		grad_I_2 		= [interp2(dx_I_2,j_2,i_2,interpolation); interp2(dy_I_2,j_2,i_2,interpolation)];
 		numerateur_pq 	= grad_I_1 - R_1_2(1:2,1:2)' * grad_I_2;
 		denominateur_pq = R_1_2(1:2,3)' * grad_I_2;
