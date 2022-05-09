@@ -8,6 +8,7 @@ K = params.K;
 u_0 = K(1,3);
 v_0 = K(2,3);
 f = K(1,1);
+facteur_k = 451*(4/3^2);
 
 % Image de référence
 indice_image_reference = 5;
@@ -51,4 +52,4 @@ z(:,:,indice_image_reference+1:end) = z_to_sort(:,:,indice_image_reference+1:end
 N = normalMaps;
 
 
-save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'indice_image_reference', 'K', 'u_0', 'v_0', 'f', 'I', 'masque', 'R', 't', 'z', 'N');
+save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'indice_image_reference', 'K', 'u_0', 'v_0', 'f', 'facteur_k', 'I', 'masque', 'R', 't', 'z', 'N');

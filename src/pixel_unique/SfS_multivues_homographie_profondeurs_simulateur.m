@@ -9,7 +9,7 @@ H = taille_ecran(4);
 load ../../data/simulateur_formate.mat;
 % Indices des images
 indice_premiere_image = 1;
-indice_deuxieme_image = 2;
+indice_deuxieme_image = 3;
 % Les profondeurs
 Z_1 = z(:,:,indice_premiere_image);
 % Les images
@@ -50,6 +50,8 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
+	i_1 = 432;
+	j_1 = 389;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
