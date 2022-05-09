@@ -31,7 +31,7 @@ K_inv 	= [1/f 0 -u_0/f ; 0 1/f -v_0/f ; 0 0 1];
 %% Préparation de la scène
 
 % Matrices de coordonnées (abscisses orientées vers le bas, ordonnées vers la droite) :
-[Y,X]		= meshgrid(1:taille,1:taille);
+[X,Y]		= meshgrid(1:taille,1:taille);
 X			= X-C_x;
 Y			= Y-C_y;
 valeurs_X	= (1:taille)-C_x;
@@ -42,14 +42,14 @@ S = [ 0 ; 0 ; 1 ];
 
 % Angles de rotations
 %angles = [-pi/6 0 ; 0 -pi/6 ; pi/12 -pi/17; -pi/19 pi/7];
-angles = [-pi/6 0 ; 0 -pi/6];
+%angles = [-pi/6 0 ; 0 -pi/6];
 
 % Tirage aléatoire des angles
-%nombre_tirage = 5;
-%angles = zeros(nombre_tirage,2);
-%for k = 1: nombre_tirage
-%	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
-%end
+nombre_tirage = 5;
+angles = zeros(nombre_tirage,2);
+for k = 1: nombre_tirage
+	angles(k,:) = 2 * (rand(1,2) - 0.5) * (pi / 6);
+end
 
 % Matrices de stockage
 I 		= zeros(taille, taille, size(angles,1)+1);		% Ensemble des images
@@ -180,15 +180,5 @@ for k = 1:size(angles,1)
 
 end
 
-
-%% Préparation des données pour usage
-for k = 1:size(angles,1)+1
-	I(:,:,k) = transpose(I(:,:,k));
-	masque(:,:,k) = transpose(masque(:,:,k));
-end
-for k = 1:3
-	N_1(:,:,k) = transpose(N_1(:,:,k));
-end
-Z_1 = Z_1';
 
 save ../../data/donnees_calotte;

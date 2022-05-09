@@ -15,7 +15,7 @@ interpolation 	= 'nearest';		% Type d'interpolation
 estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
 affichage_debug = 0;				% Affichage d'informations diverses
-rayon_voisinage = 3;				% Rayon du voisinage carré à prendre en compte
+rayon_voisinage = 2;				% Rayon du voisinage carré à prendre en compte
 
 %% Données
 % Fichier des données
@@ -234,6 +234,10 @@ erreurs_corrigees = (erreurs ~= 0) .* erreurs + 100 * (erreurs == 0) .* ones(siz
 z_in = transpose(valeurs_z(indices_min));
 z = nan(nombre_lignes, nombre_colonnes);
 z(ind_1) = z_in;
+
+% Sélection des normales
+n_totales = zeros(3, nombre_pixels);
+%n_totales(:,ind_1) = n_estimes(:,);
 
 % Sélections des erreurs angulaires
 % angles = ones(nombre_lignes, nombre_colonnes);
