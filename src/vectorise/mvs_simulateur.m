@@ -15,7 +15,7 @@ interpolation 	= 'nearest';		% Type d'interpolation
 estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
 affichage_debug = 0;				% Affichage d'informations diverses
-rayon_voisinage = 2;				% Rayon du voisinage carré à prendre en compte
+rayon_voisinage = 3;				% Rayon du voisinage carré à prendre en compte
 
 %% Données
 % Fichier des données
@@ -188,10 +188,3 @@ sl.EdgeColor = 'none';
 grid off;
 colormap gray;
 axis equal;
-%plot3(X,Y,z,'k.');
-%xlabel('$x$','Interpreter','Latex','FontSize',30);
-%ylabel('$y$','Interpreter','Latex','FontSize',30);
-%zlabel('$z$','Interpreter','Latex','FontSize',30);
-%title('Relief trouvé')
-%axis equal;
-%rotate3d;
