@@ -76,27 +76,27 @@ grille_voisinage = grille_voisinage';
 normale_theorique = [N_1(ind_1)' ; N_1(ind_1 + nombre_pixels)' ; N_1(ind_1 + 2*nombre_pixels)'];
 
 %% Boucle de reconstruction
-nombre_z = length(valeurs_z);
 erreurs	= 10*ones(length(i_k), nombre_z);
 erreurs_angulaires	= zeros(length(i_k), nombre_z);
+n_estimes = zeros(3, nombre_pixels_etudies, nombre_z);
 
 tic
 fprintf("\n")
-for i = 1:nombre_z
+for indice_z = 1:nombre_z
 
 	% Affichage de la progression des calculs
 	switch (affichage)
 		case 'Iteration'
 			fprintf('\r');
-			fprintf("Progression : %d / %d",i,nombre_z);
+			fprintf("Progression : %d / %d",indice_z,nombre_z);
 		case 'Pourcentage'
-			if mod(i,round(nombre_z/25)) == 0
-				disp("Progression à " + int2str(i/nombre_z*100) + "%");
+			if mod(indice_z,round(nombre_z/25)) == 0
+				disp("Progression à " + int2str(indice_z/nombre_z*100) + "%");
 			end
 	end
 
 	% Sélection d'une profondeur
-	valeur_z 	= valeurs_z(i);
+	valeur_z 	= valeurs_z(indice_z);
 	P_k(3,:,1) 	= valeur_z;
 
 	% Changements de repère
@@ -148,8 +148,9 @@ for i = 1:nombre_z
 
 	% Calcul de la normale
 	normale = [p_estim ; q_estim ; -ones(1,nombre_pixels_etudies)] ./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nombre_pixels_etudies));
+	n_estimes(:,:,indice_z) = normale;
 	erreur_angulaire = (180/pi) * acos(dot(normale_theorique,normale)/(norm(normale_theorique)*norm(normale)));
-	erreurs_angulaires(:,i) = erreur_angulaire';
+	erreurs_angulaires(:,indice_z) = erreur_angulaire';
 
 	% Calcul du plan considéré
 	d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
@@ -189,9 +190,9 @@ for i = 1:nombre_z
 	%erreur_k = erreur_k + 10 * (1 - condition_image);
 	switch (estimateur)
 		case 'MSE'
-			erreurs(:,i) = (1 / nombre_images) * sum(erreur_k.^2,2);
+			erreurs(:,indice_z) = (1 / nombre_images) * sum(erreur_k.^2,2);
 		case 'Robuste'
-			erreurs(:,i) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+			erreurs(:,indice_z) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 	end
 
 

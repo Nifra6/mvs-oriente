@@ -58,26 +58,25 @@ grille_voisinage = voisinage_ligne + voisinage_colonne';
 grille_voisinage = grille_voisinage';
 
 %% Boucle de reconstruction
-nombre_z = length(valeurs_z);
 erreurs	= 10*ones(length(i_k), nombre_z);
 
 tic
 fprintf("\n")
-for i = 1:nombre_z
+for indice_z = 1:nombre_z
 
 	% Affichage de la progression des calculs
 	switch (affichage)
 		case 'Iteration'
 			fprintf('\r');
-			fprintf("Progression : %d / %d",i,nombre_z);
+			fprintf("Progression : %d / %d",indice_z,nombre_z);
 		case 'Pourcentage'
-			if mod(i,round(nombre_z/25)) == 0
-				disp("Progression à " + int2str(i/nombre_z*100) + "%");
+			if mod(indice_z,round(nombre_z/25)) == 0
+				disp("Progression à " + int2str(indice_z/nombre_z*100) + "%");
 			end
 	end
 
 	% Sélection d'une profondeur
-	valeur_z 	= valeurs_z(i);
+	valeur_z 	= valeurs_z(indice_z);
 	P_k(3,:,1) 	= valeur_z;
 
 	% Changements de repère
@@ -135,9 +134,9 @@ for i = 1:nombre_z
 	%erreur_k = erreur_k + 10 * (1 - condition_image);
 	switch (estimateur)
 		case 'MSE'
-			erreurs(:,i) = (1 / nombre_images) * sum(erreur_k.^2,2);
+			erreurs(:,indice_z) = (1 / nombre_images) * sum(erreur_k.^2,2);
 		case 'Robuste'
-			erreurs(:,i) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+			erreurs(:,indice_z) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 	end
 
 
