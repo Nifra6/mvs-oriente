@@ -10,7 +10,7 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-nombre_z		= 11;				% Valeurs de profondeurs testées
+nombre_z		= 21;				% Valeurs de profondeurs testées
 interpolation 	= 'linear';			% Type d'interpolation
 estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
@@ -20,12 +20,14 @@ rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
 %% Données
 % Fichier des données
 load ../../data/simulateur_formate.mat;
+load z_grossiers.mat;
 % Taille des images
 nombre_pixels = nombre_lignes * nombre_colonnes;
 taille_patch  = (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
 % Les profondeurs
 Z_1 = z(:,:,1);
-valeurs_z = linspace(min(Z_1,[],'all'),max(Z_1,[],'all'),nombre_z);	% Valeurs de profondeurs testées
+Z_1_estime = z_gross;
+valeurs_z = linspace(-espace_z,espace_z,nombre_z);	% Valeurs de profondeurs testées
 % Les normales (pour debug)
 N_1 = N(:,:,:,1);
 % Les poses relatives
@@ -49,19 +51,20 @@ ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
 nombre_pixels_etudies = size(ind_1,1);
 P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
 P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_k), 1)].';
+z_grossiers_estimes = Z_1_estime(ind_1);
 
 
 %% Calcul du filtre
-rayon_masque = 5;
+rayon_masque = 1;
 taille_masque = (2*rayon_masque+1)^2;
 [x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
-u_x = 0; u_y = 0; sigma = taille_masque/8;
+u_x = 0; u_y = 0; sigma = taille_masque/4;
 filtre = 1./(2*pi*sigma^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
-filtre = filtre / sum(filtre(:));
+filtre = filtre / norm(filtre);
 dx_filtre = -(x-u_x)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
 dy_filtre = -(y-u_y)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
-dx_filtre = dx_filtre / sum(dx_filtre(:));
-dy_filtre = dy_filtre / sum(dy_filtre(:));
+dx_filtre = dx_filtre / norm(dx_filtre);
+dy_filtre = dy_filtre / norm(dy_filtre);
 
 I_filtre = zeros(size(I));
 for k = 1:nombre_images
@@ -74,13 +77,10 @@ end
 dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
 for k = 1:nombre_images
-	% Gradient non filtré
 	[dx_I, dy_I] = gradient(I(:,:,k));
+	%dx_I = conv2(I(:,:,k),dx_filtre,'same');
+	%dy_I = conv2(I(:,:,k),dy_filtre,'same');
 	%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
-	% Gradient filtré
-	dx_I = conv2(I(:,:,k),dx_filtre,'same');
-	dy_I = conv2(I(:,:,k),dy_filtre,'same');
-	% Sauvegarde des gradients
 	dx_I_k(:,:,k) = dx_I;
 	dy_I_k(:,:,k) = dy_I;
 end
@@ -119,7 +119,7 @@ for indice_z = 1:nombre_z
 	end
 
 	% Sélection d'une profondeur
-	valeur_z 	= valeurs_z(indice_z);
+	valeur_z 	= z_grossiers_estimes + valeurs_z(indice_z);
 	P_k(3,:,1) 	= valeur_z;
 
 	% Changements de repère
@@ -254,7 +254,7 @@ format long;
 erreurs_corrigees = (erreurs ~= 0) .* erreurs + 1 * (erreurs == 0) .* ones(size(erreurs));
 %erreurs_corrigees = erreurs;
 [~,indices_min] = min(erreurs_corrigees,[],2);
-z_in = transpose(valeurs_z(indices_min));
+z_in = z_grossiers_estimes + transpose(valeurs_z(indices_min));
 z = nan(nombre_lignes, nombre_colonnes);
 z(ind_1) = z_in;
 
@@ -268,7 +268,8 @@ end
 
 % Sélections des erreurs angulaires
 angles = zeros(nombre_lignes, nombre_colonnes);
-angles(ind_1) = abs((180/pi) * atan2(vecnorm(cross(normale_theorique,n_totales_ind)),dot(normale_theorique,n_totales_ind)));
+angles(ind_1) = (180/pi) * atan2(vecnorm(cross(normale_theorique,n_totales_ind)),dot(normale_theorique,n_totales_ind));
+max(angles,[],'all');
 
 % Mesures
 disp("==============")
@@ -295,16 +296,10 @@ axis equal;
 
 % Affichage des erreurs angulaires
 max(angles,[],'all')
-mean(angles(:))
-median(angles(:))
 %save('../../data/angles_cubic.mat','angles');
-angles_norm_max = angles / max(angles,[],'all');
-angles_norm_180 = angles / 180;
+angles = angles / max(angles,[],'all');
 figure;
-imshow(angles_norm_max);
-
-figure;
-imshow(angles_norm_180);
+imshow(angles);
 
 save('../../data/normales_simulateur_estimes.mat','n_totales');
 

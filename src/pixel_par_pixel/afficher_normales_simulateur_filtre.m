@@ -34,32 +34,29 @@ u_0 = u_0;
 v_0 = v_0;
 facteur_k = 451*(4/3^2);
 
-% Les gradients
-%[dx_I_1, dy_I_1] = gradient(I_1);
-%[dx_I_2, dy_I_2] = gradient(I_2);
+%% Calcul du filtre
+rayon_masque = 1;
+taille_masque = (2*rayon_masque+1)^2;
+[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+u_x = 0; u_y = 0; sigma = taille_masque/4;
+filtre = 1./(2*pi*sigma^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
+filtre = filtre / norm(filtre);
+dx_filtre = -(x-u_x)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
+dy_filtre = -(y-u_y)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
+dx_filtre = dx_filtre / norm(dx_filtre);
+dy_filtre = dy_filtre / norm(dy_filtre);
 
-[G,imask] = make_gradient(masque_1);
-Dx_main = G(1:2:end-1,:);
-Dy_main = G(2:2:end,:);
-clear G;
-dx_I_1_calc = Dx_main * I_1(imask);
-dy_I_1_calc = Dy_main * I_1(imask);
-dx_I_1 = zeros(size(I_1));
-dy_I_1 = zeros(size(I_1));
-dx_I_1(imask) = dx_I_1_calc;
-dy_I_1(imask) = dy_I_1_calc;
-clear imask;
-[G,imask] = make_gradient(masque_2);
-Dx_main = G(1:2:end-1,:);
-Dy_main = G(2:2:end,:);
-clear G;
-dx_I_2_calc = Dx_main * I_2(imask);
-dy_I_2_calc = Dy_main * I_2(imask);
-dx_I_2 = zeros(size(I_2));
-dy_I_2 = zeros(size(I_2));
-dx_I_2(imask) = dx_I_2_calc;
-dy_I_2(imask) = dy_I_2_calc;
-clear imask;
+I_filtre = zeros(size(I));
+for k = 1:nombre_images
+	I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+end
+%I_filtre = I;
+
+%% Calcul des gradients
+dx_I_1 = conv2(I_1,dx_filtre,'same');
+dy_I_1 = conv2(I_1,dy_filtre,'same');
+dx_I_2 = conv2(I_2,dx_filtre,'same');
+dy_I_2 = conv2(I_2,dy_filtre,'same');
 
 
 %% Paramètres

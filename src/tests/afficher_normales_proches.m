@@ -78,32 +78,40 @@ affichage_normales_calculees = 1;
 
 %% Algorithme
 
+% Sélection d'un pixel
+figure;
+title("Cliquez sur le pixel souhaité.")
+imshow(I_1);
+P			= drawpoint;
+pos 		= P.Position;
+i_1 		= round(pos(2));
+j_1 		= round(pos(1));
+grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
+close;
+
 fprintf("\n");
 tic;
 figure;
 imshow(I_1);
 hold on;
-% Sélection d'un pixel
-for indice_pixel = 1:nb_pixels_utilises
-	i_1 		= i_1_liste(indice_pixel);
-	j_1 		= j_1_liste(indice_pixel);
-	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
-	if mod(i_1,espacement_normales) == 1 & mod(j_1,espacement_normales) == 1
+normale_comparaison = zeros(3,4);
 
-		% ----- Affichage de la normale théorique
-		normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
-		i_arrow_th = i_1 + facteur_normales * normale_theorique(2);
-		j_arrow_th = j_1 + facteur_normales * normale_theorique(1);
-		X_th = [j_1 j_arrow_th];
-		Y_th = [i_1 i_arrow_th];
-		plot(X_th, Y_th, 'b-', 'MarkerSize', 30, 'LineWidth', 2);
+	% ----- Affichage de la normale théorique
+	normale_theorique = reshape(N_1(i_1,j_1,:),3,1);
+	normale_comparaison(:,1) = normale_theorique;
+	i_arrow_th = i_1 + facteur_normales * normale_theorique(2);
+	j_arrow_th = j_1 + facteur_normales * normale_theorique(1);
+	X_th = [j_1 j_arrow_th];
+	Y_th = [i_1 i_arrow_th];
+	plot(X_th, Y_th, 'b-', 'MarkerSize', 30, 'LineWidth', 2);
 
-		% ------ Calcul de la normale avec p et q
-		if affichage_normales_calculees
+	% ------ Calcul de la normale avec p et q
+	if affichage_normales_calculees
 
+		for i = 1:3
 			% Récupération de la profondeur
-			z = Z_1(i_1,j_1);
+			z = Z_1(i_1,j_1) + (i-2) * 1e-2;
 
 			% Changements de repère
 			u_1 = j_1 - u_0;
@@ -115,13 +123,14 @@ for indice_pixel = 1:nb_pixels_utilises
 			i_2 = v_2 + v_0;
 			j_2 = u_2 + u_0;
 
+
 			% Vérification si pixel hors image
 			condition_image = i_2 > 0.5 & i_2 <= nombre_lignes & j_2 > 0.5 & j_2 <= nombre_colonnes;
 
 			% Si le point reprojeté tombe sur le masque de la deuxième image
 			if ( condition_image && masque_2(round(i_2),round(j_2)) )
 
-				grad_I_2 		= [interp2(dx_I_2,j_2,i_2); interp2(dy_I_2,j_2,i_2)];
+				grad_I_2 		= [interp2(dx_I_2,j_2,i_2,'linear'); interp2(dy_I_2,j_2,i_2,'linear')];
 				numerateur_pq 	= grad_I_1 - R_1_2(1:2,1:2)' * grad_I_2;
 				denominateur_pq = R_1_2(1:2,3)' * grad_I_2;
 
@@ -134,19 +143,26 @@ for indice_pixel = 1:nb_pixels_utilises
 
 					% Calcul du plan au pixel considéré
 					normale = (1 / sqrt(p_estime^2 + q_estime^2 + 1)) * [p_estime ; q_estime ; -1];
+					normale_comparaison(:,i+1) = normale;
 					i_arrow_cal = i_1 + facteur_normales * normale(2);
 					j_arrow_cal = j_1 + facteur_normales * normale(1);
 					X_cal = [j_1 j_arrow_cal];
 					Y_cal = [i_1 i_arrow_cal];
-					plot(X_cal, Y_cal, 'r-', 'MarkerSize', 30, 'LineWidth', 2);
+					switch (i)
+						case 1
+							plot(X_cal, Y_cal, 'r-', 'MarkerSize', 30, 'LineWidth', 2);
+						case 2
+							plot(X_cal, Y_cal, 'c-', 'MarkerSize', 30, 'LineWidth', 2);
+						case 3
+							plot(X_cal, Y_cal, 'y-', 'MarkerSize', 30, 'LineWidth', 2);
+					end
 
 				end
 			end
-
 		end
 
 	end
 
-end
+normale_comparaison
 toc;
 hold off;

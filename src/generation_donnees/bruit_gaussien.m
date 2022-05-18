@@ -5,12 +5,9 @@
 load ../../data/simulateur_formate.mat;
 
 %% Bruitage des données
-seuil = 0.01;
-tirage = rand(size(I));
-bruit_poivre = tirage < seuil;
-bruit_sel = tirage > (1 - seuil);
-pas_bruit = ones(size(I)) - bruit_sel - bruit_poivre;
-I = pas_bruit .* I + bruit_poivre .* zeros(size(I)) + bruit_sel .* ones(size(I));
+snr = 10;
+bruit_g = (snr/255) * rand(size(I));
+I = I + bruit_g;
 
 
 %% Sauvegardes des données bruitées

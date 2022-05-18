@@ -27,7 +27,7 @@ P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_
 
 %% Paramètres
 %valeurs_z   = min(Z_1,[],'all'):0.001:max(Z_1,[],'all');
-nombre_z = 101;
+nombre_z = 11;
 valeurs_z = linspace(min(Z_1,[],'all'),max(Z_1,[],'all'),nombre_z);	% Valeurs de profondeurs testées
 
 %% Boucle de reconstruction
@@ -117,3 +117,7 @@ sl.EdgeColor = 'none';
 grid off;
 colormap gray;
 axis equal;
+
+z_gross = z;
+espace_z = valeurs_z(2) - valeurs_z(1);
+save("z_grossiers.mat","z_gross","espace_z");

@@ -18,6 +18,9 @@ facteur_k = 451*(4/3^2);
 % Image de référence
 indice_image_reference = 5;
 
+% L'éclairage
+s = params.lightIntensity * params.lightSource;
+
 % Les images
 I_to_sort = squeeze(renderedImages) / max(renderedImages,[],'all');
 I = zeros(size(I_to_sort));
@@ -50,7 +53,12 @@ z(:,:,indice_image_reference+1:end) = z_to_sort(:,:,indice_image_reference+1:end
 
 
 % Les normales
-N = normalMaps;
+N_to_sort = normalMaps;
+N = zeros(size(N_to_sort));
+N(:,:,:,1) = N_to_sort(:,:,:,indice_image_reference);
+N(:,:,:,2:indice_image_reference) = N_to_sort(:,:,:,1:indice_image_reference-1);
+N(:,:,:,indice_image_reference+1:end) = N_to_sort(:,:,:,indice_image_reference+1:end);
+
 
 %% Retirer les points masqués dans certaines images
 % Calcul des positions 3D des points dans l'image 1
@@ -87,4 +95,4 @@ masque(:,:,1) = reshape(condition_image, nombre_lignes, nombre_colonnes);
 
 
 %% Sauvegardes des données exploitables
-save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'indice_image_reference', 'K', 'u_0', 'v_0', 'f', 'facteur_k', 'I', 'masque', 'R', 't', 'z', 'N');
+save('../../data/simulateur_formate.mat','nombre_images', 'nombre_lignes', 'nombre_colonnes', 'indice_image_reference', 's', 'K', 'u_0', 'v_0', 'f', 'facteur_k', 'I', 'masque', 'R', 't', 'z', 'N');

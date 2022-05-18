@@ -10,19 +10,19 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-nombre_z		= 101;				% Valeurs de profondeurs testées
-interpolation 	= 'nearest';		% Type d'interpolation
+nombre_z		= 11;				% Valeurs de profondeurs testées
+interpolation 	= 'linear';			% Type d'interpolation
 estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
 affichage_debug = 0;				% Affichage d'informations diverses
-rayon_voisinage = 3;				% Rayon du voisinage carré à prendre en compte
+rayon_voisinage = 3;			% Rayon du voisinage carré à prendre en compte
 
 %% Données
 % Fichier des données
 load ../../data/simulateur_formate.mat;
 % Taille des images
 nombre_pixels = nombre_lignes * nombre_colonnes;
-taille_patch 	= (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
+taille_patch  = (2*rayon_voisinage + 1)^2;	% Nombre de pixels dans un patch
 % Les profondeurs
 Z_1 = z(:,:,1);
 valeurs_z = linspace(min(Z_1,[],'all'),max(Z_1,[],'all'),nombre_z);	% Valeurs de profondeurs testées
@@ -51,6 +51,20 @@ P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
 P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_k), 1)].';
 
 
+%% Calcul du filtre
+rayon_masque = 1;
+taille_masque = (2*rayon_masque+1)^2;
+[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+u_x = 0; u_y = 0; sigma = taille_masque/4;
+filtre = 1./(2*pi*sigma^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
+filtre = filtre / norm(filtre);
+I_filtre = zeros(size(I));
+for k = 1:nombre_images
+	I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+end
+%I_filtre = I;
+
+
 %% Construction du voisinage
 voisinage_ligne = -rayon_voisinage*nombre_lignes:nombre_lignes:rayon_voisinage*nombre_lignes;
 voisinage_colonne = -rayon_voisinage:rayon_voisinage;
@@ -58,7 +72,7 @@ grille_voisinage = voisinage_ligne + voisinage_colonne';
 grille_voisinage = grille_voisinage';
 
 %% Boucle de reconstruction
-erreurs	= 10*ones(length(i_k), nombre_z);
+erreurs	= 10*ones(nombre_pixels_etudies, nombre_z);
 
 tic
 fprintf("\n")
@@ -125,11 +139,11 @@ for indice_z = 1:nombre_z
 	end
 
 	% Calcul de l'erreur
-	I_1_voisinage = interp2(I(:,:,1),j_1_decales,i_1_decales,interpolation);
+	I_1_voisinage = interp2(I_filtre(:,:,1),j_1_decales,i_1_decales,interpolation);
 	erreur_k = zeros(nombre_pixels_etudies, nombre_images-1);
 	for k = 1:nombre_images-1
-		I_k_voisinage = interp2(I(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
-		erreur_k(:,k) = sum((I_1_voisinage-I_k_voisinage).^2,2);
+		I_k_voisinage = interp2(I_filtre(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
+		erreur_k(:,k) = prod(condition_image,2).*sum((I_1_voisinage-I_k_voisinage),2);
 	end
 	%erreur_k = erreur_k + 10 * (1 - condition_image);
 	switch (estimateur)
@@ -158,8 +172,10 @@ fprintf('\n');
 toc
 
 %% Résultats
+format long;
+
 % Sélections des profondeurs avec l'erreur minimale
-erreurs_corrigees = (erreurs ~= 0) .* erreurs + 100 * (erreurs == 0) .* ones(size(erreurs));
+erreurs_corrigees = (erreurs ~= 0) .* erreurs + 1 * (erreurs == 0) .* ones(size(erreurs));
 %erreurs_corrigees = erreurs;
 [~,indices_min] = min(erreurs_corrigees,[],2);
 z_in = transpose(valeurs_z(indices_min));
@@ -183,7 +199,7 @@ Y = (Y - v_0) / facteur_k;
 
 % Affichage
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
-sl = surfl(X,Y,-z);
+sl = surfl(X,Y,-z,s);
 sl.EdgeColor = 'none';
 grid off;
 colormap gray;
