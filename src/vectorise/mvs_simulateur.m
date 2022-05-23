@@ -110,7 +110,6 @@ for indice_z = 1:nombre_z
 	for k = 1:nombre_images-1
 		i_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* i_k(:,k+1);
 		j_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* j_k(:,k+1);
-		% P'têt une carabistouille ci-dessus
 		i_k(:,k+1) = round(i_k(:,k+1));
 		j_k(:,k+1) = round(j_k(:,k+1));
 		ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));

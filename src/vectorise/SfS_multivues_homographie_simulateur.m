@@ -16,6 +16,8 @@ estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
 affichage_debug = 0;				% Affichage d'informations diverses
 rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
+filtrage 		= 1;				% Utilisation d'un filtrage gaussien
+sigma_filtre 	= 5;			    % Écart type du filtre gaussien
 
 %% Données
 % Fichier des données
@@ -52,34 +54,53 @@ P_k(:,:,1) 	= [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, zeros(length(i_
 
 
 %% Calcul du filtre
-rayon_masque = 5;
-taille_masque = (2*rayon_masque+1)^2;
-[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
-u_x = 0; u_y = 0; sigma = taille_masque/8;
-filtre = 1./(2*pi*sigma^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
-filtre = filtre / sum(filtre(:));
-dx_filtre = -(x-u_x)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
-dy_filtre = -(y-u_y)./(2*pi*sigma^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma^2));
-dx_filtre = dx_filtre / sum(dx_filtre(:));
-dy_filtre = dy_filtre / sum(dy_filtre(:));
+if (filtrage)
+	% Analytique
+	rayon_masque = sigma_filtre * 4;
+	taille_masque = (2*rayon_masque+1)^2;
+	[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+	u_x = 0; u_y = 0;
+	filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	filtre = filtre / sum(filtre(:));
+	dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	dx_filtre = dx_filtre;
+	dy_filtre = dy_filtre;
 
-I_filtre = zeros(size(I));
-for k = 1:nombre_images
-	I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+	% Fonctions Matlab
+	%u_x = 0; u_y = 0;
+	%cote_masque = ceil(sqrt(8*sigma_filtre));
+	%filtre = fspecial('gauss',cote_masque,sigma_filtre);
+	%filtre = filtre / sum(filtre(:));
+	%dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
+	%dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
+	%dx_filtre = conv2(filtre,dx_conv);
+	%dy_filtre = conv2(filtre,dy_conv);
+	%dx_filtre = dx_filtre / sum(dx_filtre(:));
+	%dy_filtre = dy_filtre / sum(dy_filtre(:));
+
+	% Filtrage de l'image
+	I_filtre = zeros(size(I));
+	for k = 1:nombre_images
+		I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+	end
+else
+	I_filtre = I;
 end
-%I_filtre = I;
-
 
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
 for k = 1:nombre_images
-	% Gradient non filtré
-	[dx_I, dy_I] = gradient(I(:,:,k));
-	%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
-	% Gradient filtré
-	dx_I = conv2(I(:,:,k),dx_filtre,'same');
-	dy_I = conv2(I(:,:,k),dy_filtre,'same');
+	if (filtrage)
+		% Gradient filtré
+		dx_I = conv2(I(:,:,k),dx_filtre,'same');
+		dy_I = conv2(I(:,:,k),dy_filtre,'same');
+	else
+		% Gradient non filtré
+		[dx_I, dy_I] = gradient(I(:,:,k));
+		%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
+	end
 	% Sauvegarde des gradients
 	dx_I_k(:,:,k) = dx_I;
 	dy_I_k(:,:,k) = dy_I;
@@ -175,7 +196,7 @@ for indice_z = 1:nombre_z
 
 	% Calcul du plan considéré
 	d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
-	
+
 	% Calcul de la transformation géométrique
 	ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 	[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
@@ -255,8 +276,8 @@ erreurs_corrigees = (erreurs ~= 0) .* erreurs + 1 * (erreurs == 0) .* ones(size(
 %erreurs_corrigees = erreurs;
 [~,indices_min] = min(erreurs_corrigees,[],2);
 z_in = transpose(valeurs_z(indices_min));
-z = nan(nombre_lignes, nombre_colonnes);
-z(ind_1) = z_in;
+z_estime = nan(nombre_lignes, nombre_colonnes);
+z_estime(ind_1) = z_in;
 
 % Sélection des normales
 n_totales = zeros(3, nombre_pixels);
@@ -273,10 +294,10 @@ angles(ind_1) = abs((180/pi) * atan2(vecnorm(cross(normale_theorique,n_totales_i
 % Mesures
 disp("==============")
 disp("Mesure relative de profondeur")
-sum(abs(Z_1(ind_1) - z(ind_1)),'all') / nombre_pixels_etudies
-ecart_moyen = sum(Z_1(ind_1) - z(ind_1)) / size(z_in,1);
+sum(abs(Z_1(ind_1) - z_estime(ind_1)),'all') / nombre_pixels_etudies
+ecart_moyen = sum(Z_1(ind_1) - z_estime(ind_1)) / size(z_in,1);
 disp("Mesure relative de forme")
-sum(abs(Z_1(ind_1) - (z(ind_1) + ecart_moyen)),'all') / size(z_in,1)
+sum(abs(Z_1(ind_1) - (z_estime(ind_1) + ecart_moyen)),'all') / size(z_in,1)
 
 % Préparation
 X = 1:nombre_colonnes;
@@ -287,7 +308,7 @@ Y = (Y - v_0) / facteur_k;
 
 % Affichage
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
-sl = surfl(X,Y,-z,s);
+sl = surfl(X,Y,-z_estime,s);
 sl.EdgeColor = 'none';
 grid off;
 colormap gray;
@@ -295,8 +316,8 @@ axis equal;
 
 % Affichage des erreurs angulaires
 max(angles,[],'all')
-mean(angles(:))
-median(angles(:))
+erreur_angle_moy = mean(angles(:))
+erreur_angle_med = median(angles(:))
 %save('../../data/angles_cubic.mat','angles');
 angles_norm_max = angles / max(angles,[],'all');
 angles_norm_180 = angles / 180;

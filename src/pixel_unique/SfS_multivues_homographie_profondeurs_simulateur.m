@@ -5,6 +5,9 @@ taille_ecran = get(0,'ScreenSize');
 L = taille_ecran(3);
 H = taille_ecran(4);
 
+filtrage = 1;
+sigma_filtre = 4;
+
 %% Données
 load ../../data/simulateur_formate.mat;
 % Indices des images
@@ -23,9 +26,66 @@ masque_2 = masque(:,:,indice_deuxieme_image);
 % La pose
 R_1_2 = R(:,:,indice_deuxieme_image) * R(:,:,indice_premiere_image)';
 t_1_2 = t(:,indice_deuxieme_image) - R_1_2 * t(:,indice_premiere_image);
-% Le gradient de l'image 2
-[dx_I_1, dy_I_1] = gradient(I_1);
-[dx_I_2, dy_I_2] = gradient(I_2);
+%% Calcul du filtre
+if (filtrage)
+	% Analytique
+	rayon_masque = sigma_filtre * 4;
+	taille_masque = (2*rayon_masque+1)^2;
+	[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+	u_x = 0; u_y = 0;
+	filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	filtre = filtre / sum(filtre(:));
+	dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+	dx_filtre = dx_filtre;
+	dy_filtre = dy_filtre;
+
+	% Fonctions Matlab
+	%u_x = 0; u_y = 0;
+	%cote_masque = ceil(sqrt(8*sigma_filtre));
+	%filtre = fspecial('gauss',cote_masque,sigma_filtre);
+	%filtre = filtre / sum(filtre(:));
+	%dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
+	%dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
+	%dx_filtre = conv2(filtre,dx_conv);
+	%dy_filtre = conv2(filtre,dy_conv);
+	%dx_filtre = dx_filtre / sum(dx_filtre(:));
+	%dy_filtre = dy_filtre / sum(dy_filtre(:));
+
+	% Filtrage de l'image
+	I_filtre = zeros(size(I));
+	for k = 1:nombre_images
+		I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+	end
+	I_filtre_1 = I_filtre(:,:,indice_premiere_image);
+	I_filtre_2 = I_filtre(:,:,indice_deuxieme_image);
+else
+	I_filtre_1 = I_1;
+	I_filtre_2 = I_2;
+end
+
+%% Calcul des gradients
+dx_I_k = zeros(size(I));
+dy_I_k = zeros(size(I));
+for k = 1:nombre_images
+	if (filtrage)
+		% Gradient filtré
+		dx_I = conv2(I(:,:,k),dx_filtre,'same');
+		dy_I = conv2(I(:,:,k),dy_filtre,'same');
+	else
+		% Gradient non filtré
+		[dx_I, dy_I] = gradient(I(:,:,k));
+		%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
+	end
+	% Sauvegarde des gradients
+	dx_I_k(:,:,k) = dx_I;
+	dy_I_k(:,:,k) = dy_I;
+end
+dx_I_1 = dx_I_k(:,:,indice_premiere_image);
+dy_I_1 = dy_I_k(:,:,indice_premiere_image);
+dx_I_2 = dx_I_k(:,:,indice_deuxieme_image);
+dy_I_2 = dy_I_k(:,:,indice_deuxieme_image);
+
 
 %% Paramètres
 valeurs_z 			= 4:0.001:5;	% Les valeurs de profondeurs testées
@@ -136,25 +196,25 @@ while (1)
 				end
 
 				% Récupération des niveaux de gris dans l'image 2 du voisinage	
-				I_2_voisinage = reshape(interp2(I_2, j_2_voisinage(:), i_2_voisinage(:),interpolation),2*rayon_voisinage+1,2*rayon_voisinage+1);
-				I_2_voisinage_mvs = reshape(interp2(I_2, j_2_voisinage_mvs(:), i_2_voisinage_mvs(:),interpolation),2*rayon_voisinage+1,2*rayon_voisinage+1);
+				I_2_voisinage = reshape(interp2(I_filtre_2, j_2_voisinage(:), i_2_voisinage(:),interpolation),2*rayon_voisinage+1,2*rayon_voisinage+1);
+				I_2_voisinage_mvs = reshape(interp2(I_filtre_2, j_2_voisinage_mvs(:), i_2_voisinage_mvs(:),interpolation),2*rayon_voisinage+1,2*rayon_voisinage+1);
 				if (affichage_log && profondeur_reelle)
 					disp("===== Les images récupérées")
-					I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage)
+					I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage)
 					I_2_voisinage
 					indices_2_voisi = sub2ind([nombre_lignes nombre_colonnes], round(i_2_voisinage), round(j_2_voisinage));
-					I_2_voisinage_nearest = reshape(I_2(indices_2_voisi),2*rayon_voisinage+1,2*rayon_voisinage+1);
+					I_2_voisinage_nearest = reshape(I_filtre_2(indices_2_voisi),2*rayon_voisinage+1,2*rayon_voisinage+1);
 					disp("===== Différences entre les images")
-					diff = I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage) - I_2_voisinage
+					diff = I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage) - I_2_voisinage
 					sum(diff,"all")
 				end
 
 				% Calcul de l'erreur
-				I_1_voisinage = I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage);
-				%I_2_voisinage_mvs = I_2(i_2-rayon_voisinage:i_2+rayon_voisinage,j_2-rayon_voisinage:j_2+rayon_voisinage);
+				I_1_voisinage = I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage);
+				%I_2_voisinage_mvs = I_filtre_2(i_2-rayon_voisinage:i_2+rayon_voisinage,j_2-rayon_voisinage:j_2+rayon_voisinage);
 				erreurs_mvs(indice_z) = (1/(2*rayon_voisinage+1)^2) * sum((I_1_voisinage - I_2_voisinage_mvs).^2,'all');
 				erreurs_sfs(indice_z) = (1/(2*rayon_voisinage+1)^2) * sum((I_1_voisinage - I_2_voisinage).^2,'all');
-				erreurs_pq(indice_z) = (I_1(i_1,j_1) - 1 / sqrt(p_estime^2 + q_estime^2 + 1))^2;
+				erreurs_pq(indice_z) = (I_filtre_1(i_1,j_1) - 1 / sqrt(p_estime^2 + q_estime^2 + 1))^2;
 
 
 				if (round(z) == round(Z_1(i_1,j_1)) & 0)
@@ -163,7 +223,7 @@ while (1)
 
 					% Image 1
 					subplot(2,2,1);
-					imshow(I_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage));
+					imshow(I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage));
 					title("Image 1 au voisinage")
 
 					% Image 2
@@ -173,7 +233,7 @@ while (1)
 
 					% Voisinage 1
 					subplot(2,2,3);
-					imshow(I_1);
+					imshow(I_filtre_1);
 					axis on
 					hold on;
 					i_1_voisinage = i_1-rayon_voisinage:i_1+rayon_voisinage;
@@ -187,7 +247,7 @@ while (1)
 
 					% Voisinage 2
 					subplot(2,2,4);
-					imshow(I_2)
+					imshow(I_filtre_2)
 					axis on
 					hold on;
 					[i_2_limites, j_2_limites] = limites_voisinage(i_2_voisinage_re,j_2_voisinage_re);
