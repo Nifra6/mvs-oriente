@@ -11,6 +11,7 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 surface = "sinc_1";
+nombre_vues = 9;
 liste_rayon_voisinage = 3:4;
 nombre_iteration = 1;
 ecart_type = -1;
@@ -55,5 +56,5 @@ for i_rayon_voisinage = 1:nb_rayon_voisinage
 	xlabel("Nombre d'échantillons de profondeur");
 	ylabel("Erreurs de profondeur");
 	legend("MVS moyenne", "MVSM moyenne", "MVS médiane", "MVSM médiane");
-	%ylim(1.3e-3,0);
+	ylim([7e-4,1e-2]);
 end

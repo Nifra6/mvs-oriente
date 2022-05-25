@@ -11,8 +11,9 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 surface = "gaussienne_1";
+nombre_vues = 2;
 taille_patch = 9;
-nombre_profondeur_iteration = 10000;
+nombre_profondeur_iteration = 5000;
 grille_pixel = 10;
 
 %% Variables
@@ -20,7 +21,7 @@ path = "../../data/";
 fichier_surface = "simulateur_" + surface + "_formate.mat";
 load(path+fichier_surface,'nombre_lignes','nombre_colonnes','facteur_k','u_0','v_0','s');
 path = "../../result/tests/";
-nom_fichier = "Surface_" + surface + "__patch_" + int2str(taille_patch) + "x" ...
+nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" ...
 		  	+ int2str(taille_patch) + "__nb_profondeur_" + int2str(nombre_profondeur_iteration) + ".mat";
 fichier_surface = "simulateur_" + surface + "_formate.mat";
 load(path+nom_fichier);
@@ -35,8 +36,18 @@ Y = (Y - v_0) / facteur_k;
 
 % Affichage
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
+sl = surfl(X,Y,-z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end),s);
+sl.EdgeColor = 'none';
+grid off;
+colormap gray;
+axis equal;
+title("Reconstruction MVS");
+
+% Affichage
+figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
 sl = surfl(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),s);
 sl.EdgeColor = 'none';
 grid off;
 colormap gray;
 axis equal;
+title("Reconstruction MVSm");
