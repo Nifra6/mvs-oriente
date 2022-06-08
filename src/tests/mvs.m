@@ -1,4 +1,4 @@
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre,nombre_z,z_precedent,espace_z)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nombre_z,z_precedent,espace_z)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation
@@ -6,7 +6,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	affichage 		= 'Iteration';		% Type d'affichage de la progression
 	affichage_debug = 0;				% Affichage d'informations diverses
 	%rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
-	filtrage 		= sigma_filtre >= 0;% Utilisation d'un filtrage gaussien
+	filtrage 		= sigma_filtre_grad >= 0;% Utilisation d'un filtrage gaussien
 	grille_pixels 	= 10;
 
 	%% Données
@@ -66,33 +66,34 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	%% Calcul du filtre
 	if (filtrage)
 		% Analytique
-		rayon_masque = sigma_filtre * 4;
-		taille_masque = (2*rayon_masque+1)^2;
-		[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
-		u_x = 0; u_y = 0;
-		filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		filtre = filtre / sum(filtre(:));
-		dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		dx_filtre = dx_filtre;
-		dy_filtre = dy_filtre;
+		%rayon_masque = sigma_filtre * 4;
+		%taille_masque = (2*rayon_masque+1)^2;
+		%[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+		%u_x = 0; u_y = 0;
+		%filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%filtre = filtre / sum(filtre(:));
+		%dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%dx_filtre = dx_filtre;
+		%dy_filtre = dy_filtre;
 
 		% Fonctions Matlab
-		%u_x = 0; u_y = 0;
-		%cote_masque = ceil(sqrt(8*sigma_filtre));
-		%filtre = fspecial('gauss',cote_masque,sigma_filtre);
-		%filtre = filtre / sum(filtre(:));
-		%dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
-		%dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
-		%dx_filtre = conv2(filtre,dx_conv);
-		%dy_filtre = conv2(filtre,dy_conv);
-		%dx_filtre = dx_filtre / sum(dx_filtre(:));
-		%dy_filtre = dy_filtre / sum(dy_filtre(:));
+		u_x = 0; u_y = 0;
+		cote_masque_I = ceil(4*sigma_filtre_I);
+		filtre_I = fspecial('gauss',cote_masque_I,sigma_filtre_I);
+		filtre_I = filtre_I / sum(filtre_I(:));
+		cote_masque_grad = ceil(4*sigma_filtre_grad);
+		filtre_grad = fspecial('gauss',cote_masque_grad,sigma_filtre_grad);
+		filtre_grad = filtre_grad / sum(filtre_grad(:));
+		dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
+		dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
+		dx_filtre = conv2(filtre_grad,dx_conv);
+		dy_filtre = conv2(filtre_grad,dy_conv);
 
 		% Filtrage de l'image
 		I_filtre = zeros(size(I));
 		for k = 1:nombre_images
-			I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+			I_filtre(:,:,k) = conv2(I(:,:,k),filtre_I,'same');
 		end
 	else
 		I_filtre = I;

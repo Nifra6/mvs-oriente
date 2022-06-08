@@ -1,4 +1,4 @@
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre,nombre_z,z_precedent,espace_z)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nombre_z,z_precedent,espace_z)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation
@@ -6,7 +6,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	affichage 		= 'Iteration';		% Type d'affichage de la progression
 	affichage_debug = 0;				% Affichage d'informations diverses
 	%rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
-	filtrage 		= sigma_filtre >= 0;% Utilisation d'un filtrage gaussien
+	filtrage 		= sigma_filtre_grad >= 0;% Utilisation d'un filtrage gaussien
 	grille_pixels	= 10;
 
 	%% Données
@@ -66,33 +66,34 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	%% Calcul du filtre
 	if (filtrage)
 		% Analytique
-		rayon_masque = sigma_filtre * 4;
-		taille_masque = (2*rayon_masque+1)^2;
-		[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
-		u_x = 0; u_y = 0;
-		filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		filtre = filtre / sum(filtre(:));
-		dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		dx_filtre = dx_filtre;
-		dy_filtre = dy_filtre;
+		%rayon_masque = sigma_filtre * 4;
+		%taille_masque = (2*rayon_masque+1)^2;
+		%[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
+		%u_x = 0; u_y = 0;
+		%filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%filtre = filtre / sum(filtre(:));
+		%dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
+		%dx_filtre = dx_filtre;
+		%dy_filtre = dy_filtre;
 
 		% Fonctions Matlab
-		%u_x = 0; u_y = 0;
-		%cote_masque = ceil(sqrt(8*sigma_filtre));
-		%filtre = fspecial('gauss',cote_masque,sigma_filtre);
-		%filtre = filtre / sum(filtre(:));
-		%dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
-		%dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
-		%dx_filtre = conv2(filtre,dx_conv);
-		%dy_filtre = conv2(filtre,dy_conv);
-		%dx_filtre = dx_filtre / sum(dx_filtre(:));
-		%dy_filtre = dy_filtre / sum(dy_filtre(:));
+		u_x = 0; u_y = 0;
+		cote_masque_I = ceil(4*sigma_filtre_I);
+		filtre_I = fspecial('gauss',cote_masque_I,sigma_filtre_I);
+		filtre_I = filtre_I / sum(filtre_I(:));
+		cote_masque_grad = ceil(4*sigma_filtre_grad);
+		filtre_grad = fspecial('gauss',cote_masque_grad,sigma_filtre_grad);
+		filtre_grad = filtre_grad / sum(filtre_grad(:));
+		dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
+		dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
+		dx_filtre = conv2(filtre_grad,dx_conv);
+		dy_filtre = conv2(filtre_grad,dy_conv);
 
 		% Filtrage de l'image
 		I_filtre = zeros(size(I));
 		for k = 1:nombre_images
-			I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
+			I_filtre(:,:,k) = conv2(I(:,:,k),filtre_I,'same');
 		end
 	else
 		I_filtre = I;
@@ -154,19 +155,27 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		P_k(3,:,1) 	= valeur_z;
 
 		% Changements de repère
+		%disp("Changement de repère")
+		%tic
 		for k = 1:nombre_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
 			i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + v_0).';
 			j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + u_0).';
 		end
+		%toc
 
 		% Vérification des pixels hors images
+		%disp("Vérification des pixels hors images")
+		% tic
 		condition_image = ones(nombre_pixels_etudies,nombre_images-1);
 		for k = 1:nombre_images-1
 			condition_image(:,k) = i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nombre_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nombre_colonnes;
 		end
+		% toc
 
 		% Calcul des gradients
+		% disp("Calcul des gradients")
+		% tic
 		for k = 1:nombre_images-1
 			i_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* i_k(:,k+1);
 			j_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* j_k(:,k+1);
@@ -176,8 +185,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			j_k(:,k+1) = round(j_k(:,k+1));
 			ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
 		end
+		%toc
 
 		% Calcul des numérateurs et dénominateurs
+		% disp("Calcul des numérateurs et dénominateurs")
+		% tic
 		denominateur = [];
 		numerateur_x = [];
 		numerateur_y = [];
@@ -188,8 +200,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			denominateur(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 		end
 		clear numerateur
+		% toc
 
 		% Calcul des coefficients p et q
+		% disp("Calcul des coefficients p et q")
+		% tic
 		p_q = 0;	
 		for k = 1:nombre_images-1
 			p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
@@ -198,15 +213,24 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		p_estim = p_q(1, :);
 		q_estim = p_q(2, :);
 		clear denominateur  numerateur_x numerateur_y;
+		% toc
 
 		% Calcul de la normale
+		% disp("Calcul de la normale")
+		%tic
 		normale = [p_estim ; q_estim ; -ones(1,nombre_pixels_etudies)] ./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nombre_pixels_etudies));
 		n_estimes(:,:,indice_z) = normale;
+		%toc
 
 		% Calcul du plan considéré
+		% disp("Calcul du plan considéré")
+		%tic
 		d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
+		%toc
 
 		% Calcul de la transformation géométrique
+		% disp("Calcul de la transformation géométrique")
+		%tic
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 		[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
 		u_1_decales = (j_1_decales-u_0) / facteur_k ;
@@ -216,8 +240,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		normale_2 = repmat(normale(2,:)',1,taille_patch);
 		normale_3 = repmat(normale(3,:)',1,taille_patch);
 		z_1_decales = -(d_equation_plan' + normale_1.*u_1_decales + normale_2.*v_1_decales)./normale_3;
+		%toc
 
 		% Reprojection du voisinage
+		% disp("Reprojection du voisinage")
+		%tic
 		i_2_voisinage = zeros(nombre_pixels_etudies, taille_patch, nombre_images-1);
 		j_2_voisinage = zeros(nombre_pixels_etudies, taille_patch, nombre_images-1);
 		u_1_decales_vec = reshape(u_1_decales',1,nombre_pixels_etudies*taille_patch);
@@ -230,8 +257,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) * facteur_k + v_0);
 			j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) * facteur_k + u_0);
 		end
+		% toc
 
 		% Calcul de l'erreur
+		% disp("Calcul de l'erreur")
+		%tic
 		I_1_voisinage = interp2(I_filtre(:,:,1),j_1_decales,i_1_decales,interpolation);
 		erreur_k = zeros(nombre_pixels_etudies, nombre_images-1);
 		for k = 1:nombre_images-1
@@ -245,6 +275,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			case 'Robuste'
 				erreurs(:,indice_z) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 		end
+		%toc
+		%pause
 
 
 		% Affichage debug
@@ -302,10 +334,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	% Sélections des erreurs angulaires
 	angles = zeros(nombre_lignes, nombre_colonnes);
 	angles(ind_1) = abs((180/pi) * atan2(vecnorm(cross(normale_theorique,n_totales_ind)),dot(normale_theorique,n_totales_ind)));
+	angles_ind = angles(ind_1);
 
 	% Affichage des erreurs angulaires
-	erreur_angle_moy = mean(angles(:));
-	erreur_angle_med = median(angles(:));
+	erreur_angle_moy = mean(angles_ind(:));
+	erreur_angle_med = median(angles_ind(:));
 	espace_z_suivant = abs(valeurs_z(2) - valeurs_z(1));
 
 end

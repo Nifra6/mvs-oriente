@@ -10,9 +10,9 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-surface = "sinc_1";
+surface = "gaussienne_1";
 nombre_vues = 9;
-liste_rayon_voisinage = 3:4;
+liste_rayon_voisinage = 2:4;
 nombre_iteration = 1;
 ecart_type = -1;
 liste_nombre_profondeur_iteration = [10, 50, 100, 500, 1000, 5000, 10000];
@@ -51,10 +51,10 @@ for i_rayon_voisinage = 1:nb_rayon_voisinage
 	loglog(liste_nombre_profondeur_iteration,erreurs_medianes_mvsm,'co-','LineWidth',1.5);
 	hold off;
 	grid on;
-	titre = "Erreurs de profondeurs sur la surface " + surface + " avec des patchs " + int2str(taille_patch) + "x" + int2str(taille_patch);
+	titre = "Erreurs sur la surface " + surface + ", patchs " + int2str(taille_patch) + "x" + int2str(taille_patch);
 	title(titre);
 	xlabel("Nombre d'échantillons de profondeur");
 	ylabel("Erreurs de profondeur");
-	legend("MVS moyenne", "MVSM moyenne", "MVS médiane", "MVSM médiane");
-	ylim([7e-4,1e-2]);
+	legend("MVS moyenne", "MVSM moyenne", "MVS médiane", "MVSM médiane",'Location','best');
+	ylim([7e-4,3e-2]);
 end

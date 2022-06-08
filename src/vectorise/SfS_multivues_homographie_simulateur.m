@@ -10,14 +10,14 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-nombre_z		= 11;				% Valeurs de profondeurs testées
+nombre_z		= 51;				% Valeurs de profondeurs testées
 interpolation 	= 'linear';			% Type d'interpolation
-estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
+estimateur		= 'ZNCC';			% Estimateur utilisé pour l'évaluation des erreurs
 affichage 		= 'Iteration';		% Type d'affichage de la progression
 affichage_debug = 0;				% Affichage d'informations diverses
 rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
-filtrage 		= 1;				% Utilisation d'un filtrage gaussien
-sigma_filtre 	= 5;			    % Écart type du filtre gaussien
+filtrage 		= 0;				% Utilisation d'un filtrage gaussien
+sigma_filtre 	= 3;			    % Écart type du filtre gaussien
 
 %% Données
 % Fichier des données
@@ -225,9 +225,12 @@ for indice_z = 1:nombre_z
 	% Calcul de l'erreur
 	I_1_voisinage = interp2(I_filtre(:,:,1),j_1_decales,i_1_decales,interpolation);
 	erreur_k = zeros(nombre_pixels_etudies, nombre_images-1);
+	erreur_ZNCC_k = zeros(nombre_pixels_etudies, nombre_images-1);
 	for k = 1:nombre_images-1
 		I_k_voisinage = interp2(I_filtre(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
 		erreur_k(:,k) = prod(condition_image,2).*sum((I_1_voisinage-I_k_voisinage),2);
+		erreur_ZNCC_k(:,k) = -prod(condition_image,2).*ZNCC_2D(I_1_voisinage,I_k_voisinage);
+		
 	end
 	%erreur_k = erreur_k + 10 * (1 - condition_image);
 	switch (estimateur)
@@ -235,6 +238,8 @@ for indice_z = 1:nombre_z
 			erreurs(:,indice_z) = (1 / nombre_images) * sum(erreur_k.^2,2);
 		case 'Robuste'
 			erreurs(:,indice_z) = (1 / nombre_images) * (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+		case 'ZNCC'
+			erreurs(:,indice_z) = (1 / nombre_images) * sum(erreur_ZNCC_k.^2,2);
 	end
 
 

@@ -4,8 +4,9 @@ close all;
 taille_ecran = get(0,'ScreenSize');
 L = taille_ecran(3);
 H = taille_ecran(4);
+addpath(genpath('../toolbox/'));
 
-filtrage = 1;
+filtrage = 0;
 sigma_filtre = 4;
 
 %% Données
@@ -88,7 +89,7 @@ dy_I_2 = dy_I_k(:,:,indice_deuxieme_image);
 
 
 %% Paramètres
-valeurs_z 			= 4:0.001:5;	% Les valeurs de profondeurs testées
+valeurs_z 			= 4:0.002:5;	% Les valeurs de profondeurs testées
 rayon_voisinage		= 3;			% Voisinage carré à prendre en compte
 affichage_log		= 0;			% Affichage d'informations diverses
 interpolation		= 'nearest';	% Type d'interpolation
@@ -100,6 +101,7 @@ nb_profondeurs = size(valeurs_z,2);
 erreurs_mvs	= zeros(nb_profondeurs,1);
 erreurs_sfs	= zeros(nb_profondeurs,1);
 erreurs_pq = zeros(nb_profondeurs,1);
+erreurs_ZNCC = zeros(nb_profondeurs,1);
 
 while (1)
 	% Sélection d'un pixel
@@ -110,8 +112,8 @@ while (1)
 	pos 		= P.Position;
 	i_1 		= round(pos(2));
 	j_1 		= round(pos(1));
-	i_1 = 432;
-	j_1 = 389;
+	%i_1 = 61;
+	%j_1 = 311;
 	grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 	% Récupération de la profondeur
@@ -215,6 +217,7 @@ while (1)
 				erreurs_mvs(indice_z) = (1/(2*rayon_voisinage+1)^2) * sum((I_1_voisinage - I_2_voisinage_mvs).^2,'all');
 				erreurs_sfs(indice_z) = (1/(2*rayon_voisinage+1)^2) * sum((I_1_voisinage - I_2_voisinage).^2,'all');
 				erreurs_pq(indice_z) = (I_filtre_1(i_1,j_1) - 1 / sqrt(p_estime^2 + q_estime^2 + 1))^2;
+				erreurs_ZNCC(indice_z) = -ZNCC(I_1_voisinage,I_2_voisinage);
 
 
 				if (round(z) == round(Z_1(i_1,j_1)) & 0)
@@ -223,7 +226,7 @@ while (1)
 
 					% Image 1
 					subplot(2,2,1);
-					imshow(I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage));
+					imshow(I_1_voisinage);
 					title("Image 1 au voisinage")
 
 					% Image 2
@@ -265,26 +268,35 @@ while (1)
 	plot(valeurs_z',erreurs_mvs,'g')
 	hold on
 	plot(valeurs_z',erreurs_sfs,'r')
-	plot([Z_1(i_1,j_1) ; Z_1(i_1,j_1)],[0 ; max(erreurs_mvs)],'b')
-	legend('MVS Voisinage', 'SfS Voisinage')
+	%erreurs_ZNCC = erreurs_ZNCC / min(erreurs_ZNCC);
+	plot(valeurs_z',erreurs_ZNCC,'m')
+	plot([Z_1(i_1,j_1) ; Z_1(i_1,j_1)],[min(erreurs_ZNCC) ; max(erreurs_ZNCC)],'b')
+	legend('MVS Voisinage', 'SfS Voisinage','ZNCC MVSm')
 
 	% Meilleures profondeur
 	erreurs_mvs_corrige = (erreurs_mvs ~= 0) .* erreurs_mvs + (erreurs_mvs == 0) .* ones(size(erreurs_mvs));
 	erreurs_sfs_corrige = (erreurs_sfs ~= 0) .* erreurs_sfs + (erreurs_sfs == 0) .* ones(size(erreurs_sfs));
+	erreurs_ZNCC_corrige = (erreurs_ZNCC ~= 0) .* erreurs_ZNCC + (erreurs_ZNCC == 0) .* ones(size(erreurs_ZNCC));
 	[valeur_mvs, indice_mvs] = min(erreurs_mvs_corrige);
 	[valeur_sfs, indice_sfs] = min(erreurs_sfs_corrige);
+	[valeur_ZNCC, indice_ZNCC] = min(erreurs_ZNCC_corrige);
 	disp("==============================");
 	disp("Valeur réelle :")
 	Z_1(i_1,j_1)
 	disp("Valeur MVS :")
 	valeurs_z(indice_mvs)
-	valeur_mvs
+	%valeur_mvs
 	disp("Valeur SFS :")
 	valeurs_z(indice_sfs)
-	valeur_sfs
+	%valeur_sfs
+	disp("Valeur ZNCC SFS :")
+	valeurs_z(indice_ZNCC)
+	%valeur_ZNCC
 
-	plot([valeurs_z(indice_mvs) ; valeurs_z(indice_mvs)],[0 ; max(erreurs_mvs)],'g')
-	plot([valeurs_z(indice_sfs) ; valeurs_z(indice_sfs)],[0 ; max(erreurs_mvs)],'r')
+
+	plot([valeurs_z(indice_mvs) ; valeurs_z(indice_mvs)],[min(erreurs_ZNCC) ; max(erreurs_ZNCC)],'g')
+	plot([valeurs_z(indice_sfs) ; valeurs_z(indice_sfs)],[min(erreurs_ZNCC) ; max(erreurs_ZNCC)],'r')
+	plot([valeurs_z(indice_ZNCC) ; valeurs_z(indice_ZNCC)],[min(erreurs_ZNCC) ; max(erreurs_ZNCC)],'m')
 	hold off
 
 	% Demander le nouveau pixel

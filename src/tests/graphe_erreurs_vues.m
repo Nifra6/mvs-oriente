@@ -90,6 +90,6 @@ for i_surface = 1:nb_surface
 	title(titre);
 	xlabel("Nombre de vues utilisées");
 	ylabel("Erreurs de profondeur");
-	legend(legende);
+	legend(legende,'Location','best');
 	ylim([0,3e-3]);
 end
