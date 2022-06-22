@@ -10,14 +10,18 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-liste_surface = ["gaussienne_1_bruitee_10", "gaussienne_1_pepper_bruitee_10", "gaussienne_2_bruitee_10", "sinc_1_bruitee_10"];
-nombre_vues = 9;
+valeur_bruitage = 2;
+liste_surface = ["gaussienne_1_bruitee_2", "gaussienne_1_pepper_bruitee_2", "gaussienne_2_bruitee_2", "sinc_1_bruitee_2"];
+nombre_vues = 2;
 rayon_voisinage = 4;
 nombre_iteration = 1;
-liste_ecart_type_grad = [1:4];
-liste_ecart_type_I = [1:6];
+liste_ecart_type_grad = [0:10];
+liste_ecart_type_I = [0:6];
 nombre_profondeur_iteration = 5000;
-ecart_type_grad_lock = 6;
+ecart_type_grad_lock = 0;
+ecart_type_I_lock = 6;
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 
 %% Variables
 nb_surface = size(liste_surface,2);
@@ -35,10 +39,29 @@ for i_surface = 1:nb_surface
 	for i_ecart_type_grad = 1:nb_ecart_type_grad
 		ecart_type_grad = liste_ecart_type_grad(i_ecart_type_grad);
 		% Chargement des résultats
-		nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
-			+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
-			+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(10) + "__filtre_" ...
-			+ int2str(ecart_type_grad) + ".mat";
+		if (utilisation_profondeur_GT)
+			fichier_profondeur_GT = "__profondeurs_GT";
+		else
+			fichier_profondeur_GT = "";
+		end
+		if (utilisation_normale_GT)
+			fichier_normale_GT = "__normales_GT";
+		else
+			fichier_normale_GT = "";
+		end
+		if (ecart_type_I_lock > 1)
+			nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
+				+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
+				+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(valeur_bruitage) ...
+				+ "__filtre_I_" + int2str(ecart_type_I_lock) + "__filtre_grad_" ...
+				+ int2str(ecart_type_grad) + fichier_profondeur_GT + fichier_normale_GT + ".mat";
+		else
+			nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
+				+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
+				+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(valeur_bruitage) ...
+				+ "__filtre_" + int2str(ecart_type_grad) + fichier_profondeur_GT ...
+				+ fichier_normale_GT + ".mat";
+		end
 		path = "../../result/tests/";
 		load(path+nom_fichier);
 		% Extraction des données intéressantes
@@ -61,7 +84,7 @@ for i_surface = 1:nb_surface
 	legend('Erreurs moyennes','Erreurs médianes','Location','best');
 	ylim([4.9,45]);
 
-	if (ecart_type_grad_lock > 0)
+	if (ecart_type_grad_lock >= 0)
 		erreurs_z_moy = zeros(nb_ecart_type_I,1);
 		erreurs_z_med = zeros(nb_ecart_type_I,1);
 		for i_ecart_type_I = 1:nb_ecart_type_I
@@ -69,8 +92,9 @@ for i_surface = 1:nb_surface
 			% Chargement des résultats
 			nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
 				+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
-				+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(10) + "__filtre_I_" ...
-				+ int2str(ecart_type_I) + "__filtre_grad_" + int2str(ecart_type_grad_lock) + ".mat";
+				+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(valeur_bruitage) ...
+				+ "__filtre_I_" + int2str(ecart_type_I) + "__filtre_grad_" ...
+				+ int2str(ecart_type_grad_lock) + fichier_profondeur_GT + fichier_normale_GT + ".mat";
 			path = "../../result/tests/";
 			load(path+nom_fichier);
 			% Extraction des données intéressantes
@@ -88,7 +112,7 @@ for i_surface = 1:nb_surface
 		xlabel('Écart type')
 		ylabel('Erreurs de profondeurs')
 		legend('Erreurs moyennes','Erreurs médianes','Location','best');
-		ylim([2e-3,0.12]);
+		ylim([2e-3,0.1]);
 	else	
 		figure;
 		plot(liste_ecart_type_grad,erreurs_z_moy,'bv-','LineWidth',1.5);
@@ -101,7 +125,7 @@ for i_surface = 1:nb_surface
 		xlabel('Écart type')
 		ylabel('Erreurs de profondeurs')
 		legend('Erreurs moyennes','Erreurs médianes','Location','best');
-		ylim([2e-3,0.12]);
+		ylim([2e-3,0.1]);
 	end
 end
 

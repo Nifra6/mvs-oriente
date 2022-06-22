@@ -16,8 +16,8 @@ liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage), "gaussienne
 	+ int2str(valeur_bruitage)];
 liste_surface = ["gaussienne_1", "gaussienne_1_pepper", "gaussienne_2", "sinc_1"];
 %liste_surface = ["gaussienne_1_bis", "gaussienne_1_pepper_bis", "gaussienne_2_bis", "sinc_1_bis"];
-%liste_surface = ["gaussienne_1"];
-liste_rayon_voisinage = 4;
+liste_surface = ["gaussienne_1"];
+liste_rayon_voisinage = 1;
 nombre_iteration = 1;
 %liste_ecart_type_I = [0:0.5:3];
 liste_ecart_type_I = -2.5;
@@ -26,11 +26,16 @@ liste_ecart_type_grad = -1;
 filtrage = 0;
 liste_nombre_vues = 2;
 liste_nombre_profondeur_iteration = [5000];
-utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
 utilisation_mediane_normale = 0;
+i_pixel = 250;
+j_pixel = 250;
+%i_pixel = 210;
+%j_pixel = 170;
+%i_pixel = 233;
+%j_pixel = 394;
 
 %% Variables
+pixel_considere = sub2ind([500 500],i_pixel,j_pixel);
 nb_surface = size(liste_surface,2);
 nb_rayon_voisinage = size(liste_rayon_voisinage,2);
 nb_nombre_profondeur = size(liste_nombre_profondeur_iteration,2);
@@ -65,20 +70,6 @@ disp("=================");
 
 
 %% Modifications noms de fichiers
-if (utilisation_profondeur_GT)
-	fichier_profondeur_GT = "__profondeurs_GT";
-	liste_ecart_type_I = 0;
-	nb_ecart_type_I = 1;
-else
-	fichier_profondeur_GT = "";
-end
-if (utilisation_normale_GT)
-	fichier_normale_GT = "__normales_GT";
-	liste_ecart_type_grad = 0;
-	nb_ecart_type_grad = 1;
-else
-	fichier_normale_GT = "";
-end
 if (utilisation_mediane_normale)
 	fichier_mediane = "__normales_medianes";
 else
@@ -139,20 +130,54 @@ for i_ecart_type_I = 1:nb_ecart_type_I
 								nombre_z = 2 * nombre_profondeur_iteration + 1;
 							end
 							% Exécution
-							disp("MVS :");
-							[z_estime_mvs,erreur_z_mvs,angles_mvs,normales_mvs] = mvs(premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvs,espace_z,utilisation_profondeur_GT);
-							disp("MVS modifié :");
-							[z_estime_mvsm,erreur_z_mvsm,espace_z,normales_mvsm,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvsm,espace_z,utilisation_profondeur_GT,utilisation_normale_GT,utilisation_mediane_normale);
+							disp("MVS modifié, valeur estimée :");
+							utilisation_profondeur_GT = 0;
+							utilisation_normale_GT = 0;
+							[z_estime_mvsm,score,echantillons_z,erreur_z_mvsm,espace_z,normales_mvsm,erreur_angle_moy,erreur_angle_med,i_2,j_2] = mvs_modifie_bis(pixel_considere,premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvsm,espace_z,utilisation_profondeur_GT,utilisation_normale_GT,utilisation_mediane_normale);
+							disp("MVS modifié, valeur VT :");
+							utilisation_profondeur_GT = 1;
+							utilisation_normale_GT = 0;
+							[z_GT,score_GT,~,erreur_z_mvsm,~,~,~,~,i_2_GT,j_2_GT] = mvs_modifie_bis(pixel_considere,premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvsm,espace_z,utilisation_profondeur_GT,utilisation_normale_GT,utilisation_mediane_normale);
 						end
+						% Préparation des résultats
+						[~,indice_nearest] = min(abs(echantillons_z - z_GT));
+						[~,indice_mini] = min(score);
+						[~,indice_mins] = mink(score,5);
+						max_value = max([max(score) ; score_GT]);
+						% Affichage des résultats
+						figure;
+						plot(echantillons_z',score,'b.');
+						hold on;
+						plot([echantillons_z(indice_mini) ; echantillons_z(indice_mini)],[0 ; max_value],'m','LineWidth',2);
+						plot([echantillons_z(indice_nearest) ; echantillons_z(indice_nearest)],[0 ; max_value],'k');
+						%plot([echantillons_z(indice_mins) ; echantillons_z(indice_mins)],[0 ; max_value],'r');
+						plot(z_GT,score_GT,'g+','LineWidth',2);
+						hold off;
+						legend("Échantillonage MVSm", "Minimum trouvé", "Échantillon proche de la VT","5 minimums", "Profondeur VT");
+						title("Surface " + surface);
+						% Affichage du pixel
+						load("../../data/"+"simulateur_"+surface+"_formate.mat");
+						figure;
+						imshow(I(:,:,1));
+						hold on;
+						plot(j_pixel,i_pixel,'b+','LineWidth',3);
+						figure;
+						imshow(I(:,:,2));
+						hold on;
+						plot([j_2(1) j_2(end)],[i_2(1) i_2(end)],'b','LineWidth',1);
+						plot(j_2(indice_mini),i_2(indice_mini),'mo','LineWidth',3,'MarkerSize',10);
+						plot(j_2_GT,i_2_GT,'go','LineWidth',3,'MarkerSize',10);
+						plot(j_2(indice_mins),i_2(indice_mins),'r+','LineWidth',3);
+						plot(j_2(indice_nearest),i_2(indice_nearest),'k+','LineWidth',3);
+						hold off;
 						% Sauvegarde des résultats
-						nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) ...
+						nom_fichier = "Résultat_" + surface + "__nb_vues_" + int2str(nombre_vues) ...
 							+ "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
 							+ "__nb_profondeur_" + int2str(nombre_profondeur_iteration) ...
-							+ fichier_bruite + fichier_profondeur_GT + fichier_normale_GT ...
-							+ fichier_mediane + ".mat";
+							+ fichier_bruite + fichier_mediane + ".mat";
 						path = "../../result/tests/";
-						save(path+nom_fichier,"surface","nombre_vues","taille_patch","nombre_profondeur_iteration","z_estime_mvs","z_estime_mvsm","erreur_z_mvs","erreur_z_mvsm","normales_mvs","normales_mvsm","erreur_angle_moy","erreur_angle_med");
-						disp("Enregistrement sous : " + nom_fichier);
+						%save(path+nom_fichier,"surface","nombre_vues","taille_patch","nombre_profondeur_iteration","z_estime_mvs","z_estime_mvsm","erreur_z_mvs","erreur_z_mvsm","normales_mvs","normales_mvsm","erreur_angle_moy","erreur_angle_med");
+						%disp("Enregistrement sous : " + nom_fichier);
 					end
 					disp("------------------------------------");
 				end

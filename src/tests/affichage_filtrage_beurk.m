@@ -11,11 +11,12 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 liste_surface = ["gaussienne_1_bruitee_10", "gaussienne_2_bruitee_10", "sinc_1_bruitee_10", "gaussienne_1_pepper_bruitee_10"];
+liste_surface = ["gaussienne_1_bruitee_2"];
 liste_rayon_voisinage = 4;
 nombre_iteration = 1;
-liste_ecart_type = 6;
+liste_ecart_type = 4;
 %liste_ecart_type = [3 4]; % temp
-liste_nombre_vues = [4];
+liste_nombre_vues = [2];
 %liste_nombre_vues = [9]; % temp
 liste_nombre_profondeur_iteration = [5000];
 

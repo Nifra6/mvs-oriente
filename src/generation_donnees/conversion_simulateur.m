@@ -16,7 +16,7 @@ f = K(1,1);
 facteur_k = 451*(4/3^2);
 
 % Image de référence
-indice_image_reference = 5;
+indice_image_reference = 2;
 
 % L'éclairage
 s = params.lightIntensity * params.lightSource;

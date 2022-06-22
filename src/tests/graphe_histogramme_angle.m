@@ -10,31 +10,59 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-surface = "sinc_1";
+valeur_bruitage = 4;
+surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
+surface = "gaussienne_1_pepper";
+%surface = "gaussienne_1_bis";
+nombre_vues = 2;
 rayon_voisinage = 4;
-ecart_type_grad = -6;
-ecart_type_I = -2; 
+ecart_type_grad = -5;
+ecart_type_I = -2.5;
+filtrage = 0;
 nombre_profondeur_iteration = 5000;
-nombre_vues = 4;
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 grille_pixel = 10;
 mesure = "median";
-%mesure = "all";
+mesure = "all";
+utilisation_mediane_normale = 0;
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
-if (ecart_type_grad >= 0)
+if (utilisation_profondeur_GT)
+	fichier_profondeur_GT = "__profondeurs_GT";
+	ecart_type_I = 0;
+else
+	fichier_profondeur_GT = "";
+end
+if (utilisation_normale_GT)
+	fichier_normale_GT = "__normales_GT";
+	ecart_type_grad = 0;
+else
+	fichier_normale_GT = "";
+end
+if (utilisation_mediane_normale)
+	fichier_mediane = "__normales_medianes";
+else
+	fichier_mediane = "";
+end
+
+if (ecart_type_grad >= 0 & filtrage)
 	if (ecart_type_I >= 0)
-		fichier_bruite = "__bruite_" + int2str(10) + "__filtre_I_" + int2str(ecart_type_I) ...
-		   + "__filtre_grad_" + int2str(ecart_type_grad);
+		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_I_" ...
+			+ num2str(ecart_type_I) + "__filtre_grad_" + num2str(ecart_type_grad);
 	else
-		fichier_bruite = "__bruite_" + int2str(10) + "__filtre_" + int2str(ecart_type_grad);
+		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_" + num2str(ecart_type_grad);
 	end
 else
 	fichier_bruite = "";
 end
+
+
 nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
 	+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
-	+ int2str(nombre_profondeur_iteration) + fichier_bruite + ".mat";
+	+ int2str(nombre_profondeur_iteration) + fichier_bruite + fichier_profondeur_GT ...
+	+ fichier_normale_GT + fichier_mediane + ".mat";
 path = "../../result/tests/";
 load(path+nom_fichier);
 
@@ -65,12 +93,23 @@ min_c_map = min([min(erreur_z_mvs) min(erreur_z_mvsm)]);
 max_c_map = max([max(erreur_z_mvs) max(erreur_z_mvsm)]);
 
 complement_titre = ", " + nombre_vues + " vues";
-if (ecart_type_grad >= 0)
+if (ecart_type_grad >= 0 & filtrage)
 	if (ecart_type_I >= 0)
 		complement_titre = complement_titre + ", sigma_grad à " + ecart_type_grad + " et sigma_I à " + ecart_type_I;
-		else
-	complement_titre = complement_titre + " et sigma à " + ecart_type_grad;
+	else
+		complement_titre = complement_titre + " et sigma à " + ecart_type_grad;
 	end
+else
+	complement_titre = complement_titre + ", sans filtrage";
+end
+if (utilisation_profondeur_GT)
+	complement_titre = complement_titre + ", profondeurs VT";
+end
+if (utilisation_normale_GT)
+	complement_titre = complement_titre + ", normales VT";
+end
+if (utilisation_mediane_normale)
+	complement_titre = complement_titre + ", normales médianes";
 end
 
 

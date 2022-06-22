@@ -86,6 +86,7 @@ zones_angles = 0:10:60;
 nombre_zones = size(zones_angles,2) - 1;
 erreurs_mvs = [];
 erreurs_mvsm = [];
+erreurs_inter = [];
 label_points_zones = [];
 label_zones = [];
 for k = 1:nombre_zones
@@ -94,7 +95,8 @@ for k = 1:nombre_zones
 	nombre_points_zones(k) = length(indices_GT);
 	erreurs_mvs = [erreurs_mvs ; erreur_z_mvs(indices_GT)];
 	erreurs_mvsm = [erreurs_mvsm ; erreur_z_mvsm(indices_GT)];
-	label_points_zones = [label_points_zones ; 2 * k * ones(length(indices_GT),1)];
+	erreurs_inter = [erreurs_inter ; zeros(size(indices_GT'))];
+	label_points_zones = [label_points_zones ; 3 * k * ones(length(indices_GT),1)];
 	label_zones = [ label_zones , zones_angles(k+1) ];
 end
 
@@ -102,7 +104,7 @@ end
 %% Affichage
 % Histogramme
 figure
-b = boxplot([erreurs_mvs ; erreurs_mvsm], [label_points_zones ; label_points_zones + 1]);
+b = boxplot([erreurs_mvs ; erreurs_mvsm ; erreurs_inter], [label_points_zones ; label_points_zones + 1 ; label_points_zones + 2]);
 %legend('MVS','MVS modifié','Location','best')
 xlabel('Angles des normales avec la direction de la caméra de référence')
 ylabel('Erreurs de profondeurs médianes')
