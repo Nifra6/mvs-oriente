@@ -7,12 +7,12 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	interpolation 	= 'linear';			% Type d'interpolation utilisée
 	estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs photométriques
 	affichage 		= 'Iteration';		% Type d'affichage de la progression de l'algorithme
-	offset 			= 0.5;				% Décalage spatial entre les indices des pixels et leur coordonnées
+	offset 			= 0;				% Décalage spatial entre les indices des pixels et leur coordonnées
 
 
 	%% Données
-		% Chargement des fonctions utiles
-		addpath(genpath("../toolbox/"));
+	% Chargement des fonctions utiles
+	addpath(genpath("../toolbox/"));
 	% Chargement des données
 	path = "../../data/";
 	nom_fichier = "simulateur_" + surface + "_formate.mat";
@@ -44,8 +44,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		R_1_k(:,:,k) = R(:,:,k+1) * R(:,:,1)';
 		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
 	end
-	% La matrice inverse de calibrage
-	K_inv = inv(K);
 	% Modifications du masque (pour correspondre aux patchs utilisés)
 	masque(1:rayon_voisinage,:,1) = 0;
 	masque(end-rayon_voisinage:end,:,1) = 0;
@@ -63,11 +61,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	end
 	nb_pixels_etudies = size(ind_1,1);
 	P_k 		= zeros(3,nb_pixels_etudies,nb_images);
-	u_k 		= zeros(nb_pixels_etudies,nb_images);
-	v_k 		= zeros(nb_pixels_etudies,nb_images);
-	u_k(:,1)	= j_k - offset;
-	v_k(:,1)	= i_k - offset;
-	p_1			= [u_1 , v_1 , zeros(nb_pixels_etudies,1)]';
+	P_k(:,:,1) 	= [(j_k - offset - u_0) / facteur_k, (i_k - offset - v_0) / facteur_k, zeros(length(i_k), 1)].';
 	if (premiere_iteration)
 		z_grossiers_estimes = zeros(nb_pixels_etudies,1);
 	else
@@ -155,20 +149,16 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% Sélection d'une profondeur
 		valeur_z 	= z_grossiers_estimes + valeurs_z(indice_z);
 		if (utilisation_profondeurs_GT)
-			p_1(3,:) = Z_VT(ind_1);
+			P_k(3,:,1) 	= Z_VT(ind_1);
 		else
-			p_1(3,:) = valeur_z;
+			P_k(3,:,1) 	= valeur_z;
 		end
-		P_k(:,:,1) = K_inv * p_1;
 
 		% Changements de repère
 		for k = 1:nb_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-			p_k = K * P_k(:,:,k+1);
-			u_k(:,k+1) = p_k(1,:)';
-			v_k(:,k+1) = p_k(2,:)';
-			i_k(:,k+1) = v_k(:,k+1) + offset;
-			j_k(:,k+1) = u_k(:,k+1) + offset;
+			i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + offset + v_0).';
+			j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + offset + u_0).';
 		end
 
 		% Vérification des pixels hors images
@@ -189,19 +179,14 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		numerateur_x = [];
 		numerateur_y = [];
 		denominateur = [];
-		coeff_z_1 = 1 / p_1(3,1);
-		deplacement_1 = [u_0 - u_k(:,1) , v_0 - v_k(:,1)];
-		grad_I_1 = [grad_I_x(1,:); grad_I_y(1,:)];
 		for k = 1:nb_images-1
-			coeff_z_k = 1 / P_k(3,:,k+1);
-			deplacement_k = [u_0 - u_k(:,k+1) , v_0 - v_k(:,k+1)];
-			grad_I_k = [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-			numerateur = f * coeff_z_1 * grad_I_1 - coeff_z_k * (f * R_1_k(1:2,1:2,k)' * grad_I_k + R_1_k(3,1:2)' * sum(deplacement_k'.*grad_I_k,1));
+			numerateur = [grad_I_x(1,:); grad_I_y(1,:)] ...
+				- R_1_k(1:2,1:2,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 			numerateur_x(k,:) = numerateur(1,:);
-			numerateur_y(k,:) = numerateur(2,:);			
-			denominateur(k,:) = coeff_z_1 * sum(deplacement_1'.*grad_I_1,1) + coeff_z_k * (R_1_k(1:2,3,k)' * grad_I_k + R_1_k(3,3,k) * sum(deplacement_k'.*grad_I_k,1));
+			numerateur_y(k,:) = numerateur(2,:);
+			denominateur(k,:) = R_1_k(1:2,3,k)' * [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 		end
-		clear coeff_z_1 coeff_z_k grad_I_1 grad_I_k numerateur;
+		clear numerateur;
 
 		% Estimation de la normale
 		if (utilisation_normales_medianes)
@@ -221,7 +206,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 			% Calcul de la normale
 			normale = [p_estim ; q_estim ; -ones(1,nb_pixels_etudies)] ...
-			./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
+				./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
 		end
 
 		if (utilisation_normale_GT)
@@ -235,8 +220,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 		[i_1_decales, j_1_decales] = ind2sub([nb_lignes, nb_colonnes], ind_decales);
-		u_1_decales = j_1_decales - offset;
-		v_1_decales = i_1_decales - offset;
+		u_1_decales = (j_1_decales - offset - u_0) / facteur_k ;
+		v_1_decales = (i_1_decales - offset - v_0) / facteur_k;
 
 		normale_1 = repmat(normale(1,:)',1,taille_patch);
 		normale_2 = repmat(normale(2,:)',1,taille_patch);
@@ -249,15 +234,12 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
 		z_1_decales_vec = reshape(z_1_decales',1,nb_pixels_etudies*taille_patch);
-		P_1_voisinage = K_inv * [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
+		P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 		for k = 1:nb_images-1
 			P_k_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
-			p_k_voisinage = K * P_k_voisinage;
-			P_k_voisinage_ok = cell2mat(mat2cell(p_k_voisinage,3,repmat(taille_patch,1,nb_pixels_etudies))');
-			u_k_voisinage = P_k_voisinage_ok(1:3:end,:);
-			v_k_voisinage = P_k_voisinage_ok(2:3:end,:);
-			i_k_voisinage(:,:,k) = v_k_voisinage + offset;
-			j_k_voisinage(:,:,k) = u_k_voisinage + offset;
+			P_k_voisinage_ok = cell2mat(mat2cell(P_k_voisinage,3,repmat(taille_patch,1,nb_pixels_etudies))');
+			i_k_voisinage(:,:,k) = P_k_voisinage_ok(2:3:end,:) * facteur_k + offset + v_0;
+			j_k_voisinage(:,:,k) = P_k_voisinage_ok(1:3:end,:) * facteur_k + offset + u_0;
 		end
 
 		% Calcul de l'erreur

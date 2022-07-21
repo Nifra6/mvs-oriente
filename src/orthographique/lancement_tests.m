@@ -1,3 +1,6 @@
+% Lancer un ensemble de reconstruction sur des images prises avec une caméra orthographique via
+% MVS classique et MVS modifié.
+
 %% Trucs de Matlab
 % Clear
 clear;
@@ -6,8 +9,6 @@ close all;
 taille_ecran = get(0,'ScreenSize');
 L = taille_ecran(3);
 H = taille_ecran(4);
-% Imports de fonctions utiles
-addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 8;
@@ -29,7 +30,7 @@ liste_ecart_type_I = -1;
 liste_ecart_type_grad = 0;
 filtrage = 0;
 grille_pixels = 5;
-liste_nombre_vues = [11];
+liste_nombre_vues = [3];
 liste_nombre_profondeur_iteration = [5000];
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 0;

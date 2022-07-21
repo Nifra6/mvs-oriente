@@ -13,7 +13,7 @@ addpath(genpath('../toolbox/'));
 valeur_bruitage = 4;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
 surface = "calotte";
-nombre_vues = 11;
+nombre_vues = 3;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
