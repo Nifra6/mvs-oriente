@@ -1,4 +1,5 @@
-function normales = normales_medianes_opti(p_estimes,q_estimes)
+% Estimer la normale médiane à partir des coefficients de la pente.
+function normales = normales_medianes(p_estimes,q_estimes)
 	% Mise en forme des données
 	[nb_paire_image,nb_pixels] = size(p_estimes);
 	normales = zeros(3,nb_pixels);
