@@ -14,7 +14,8 @@ valeur_bruitage = 2;
 liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage), "gaussienne_1_pepper_bruitee_" ...
 	+ int2str(valeur_bruitage), "gaussienne_2_bruitee_" + int2str(valeur_bruitage), "sinc_1_bruitee_" ...
 	+ int2str(valeur_bruitage)];
-nombre_vues = 2;
+%liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage)];
+nombre_vues = 5;
 rayon_voisinage = 4;
 nombre_iteration = 1;
 liste_ecart_type_I = [0:0.5:3];
@@ -22,11 +23,14 @@ nombre_profondeur_iteration = 5000;
 ecart_type_grad_lock = 0;
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 1;
+utilisation_mediane_normale = 1;
 
 %% Variables
 nb_surface = size(liste_surface,2);
 nb_ecart_type_I = size(liste_ecart_type_I,2);
 taille_patch = 2*rayon_voisinage+1;
+erreurs_z = [];
+erreurs_z_sigma = [];
 erreurs_z_moy = zeros(nb_ecart_type_I,1);
 erreurs_z_med = zeros(nb_ecart_type_I,1);
 
@@ -43,6 +47,11 @@ if (utilisation_normale_GT)
 else
 	fichier_normale_GT = "";
 end
+if (utilisation_mediane_normale)
+	fichier_mediane = "__normales_medianes";
+else
+	fichier_mediane = "";
+end
 
 %% Algorithme
 for i_surface = 1:nb_surface
@@ -56,10 +65,12 @@ for i_surface = 1:nb_surface
 			+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 			+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(valeur_bruitage) ...
 			+ "__filtre_I_" + int2str(ecart_type_I) + "__filtre_grad_" ...
-			+ int2str(ecart_type_grad_lock) + fichier_profondeur_GT + fichier_normale_GT + ".mat";
+			+ int2str(ecart_type_grad_lock) + fichier_profondeur_GT + fichier_normale_GT ...
+			+ fichier_mediane + ".mat";
 		path = "../../result/tests/";
 		load(path+nom_fichier);
 		% Extraction des données intéressantes
+		erreurs_z = [erreurs_z ; erreur_z_mvsm];
 		erreurs_z_moy(i_ecart_type_I) = mean(erreur_z_mvsm);
 		erreurs_z_med(i_ecart_type_I) = median(erreur_z_mvsm);
 	end

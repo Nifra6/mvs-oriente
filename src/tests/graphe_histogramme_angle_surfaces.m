@@ -15,7 +15,7 @@ liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage), "gaussienne
 	+ int2str(valeur_bruitage), "gaussienne_2_bruitee_" + int2str(valeur_bruitage), "sinc_1_bruitee_" ...
 	+ int2str(valeur_bruitage)]; set_surface = "";
 liste_surface = ["gaussienne_1","gaussienne_1_pepper","gaussienne_2","sinc_1"]; set_surface = "";
-liste_surface = ["gaussienne_1_bis","gaussienne_1_pepper_bis","gaussienne_2_bis","sinc_1_bis"]; set_surface = " bis";
+%liste_surface = ["gaussienne_1_bis","gaussienne_1_pepper_bis","gaussienne_2_bis","sinc_1_bis"]; set_surface = " bis";
 nombre_vues = 2;
 rayon_voisinage = 4;
 ecart_type_grad = -5;

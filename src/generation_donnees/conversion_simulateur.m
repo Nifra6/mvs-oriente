@@ -13,10 +13,10 @@ K = params.K;
 u_0 = K(1,3);
 v_0 = K(2,3);
 f = K(1,1);
-facteur_k = 451*(4/3^2);
+facteur_k = params.orthoScale;
 
 % Image de référence
-indice_image_reference = 2;
+indice_image_reference = 5;
 
 % L'éclairage
 s = params.lightIntensity * params.lightSource;
@@ -61,37 +61,87 @@ N(:,:,:,indice_image_reference+1:end) = N_to_sort(:,:,:,indice_image_reference+1
 
 
 %% Retirer les points masqués dans certaines images
-% Calcul des positions 3D des points dans l'image 1
-masque_1 = masque(:,:,1);
-[i_k, j_k] = find(masque_1);
-ind_1 = sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
-Z_1 = z(:,:,1);
-P_k = zeros(3, size(ind_1,1), nombre_images);
-P_k(:,:,1) = [(j_k - u_0) / facteur_k, (i_k - v_0) / facteur_k, Z_1(:)].';
+grille_pixels = 10;
+rayon_voisinage = 15;
+offset = 0.5;
+taille_patch = (2 * rayon_voisinage + 1)^2;
+liste_z_a_regarder = [min(z(:,:,1),[],'all'), max(z(:,:,1),[],'all')];
 
-% Les poses relatives
-R_1_k = zeros(3,3,nombre_images-1);
-t_1_k = zeros(3,nombre_images-1);
-for k = 1:nombre_images-1
-	R_1_k(:,:,k) = R(:,:,k+1) * R(:,:,1)';
-	t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
+for i_z = 1:size(liste_z_a_regarder,2)
+	z_a_regarder = liste_z_a_regarder(i_z); 
+
+	% Calcul des positions 3D des points dans l'image 1
+	masque_1 = masque(:,:,1);
+	[i_k, j_k] = find(masque_1);
+	ind_1 = sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
+	if (grille_pixels > 0)
+		indices_grilles = (mod(i_k,grille_pixels) == 1) & (mod(j_k,grille_pixels) == 1);
+		ind_1 = ind_1(find(indices_grilles));
+		i_k = i_k(find(indices_grilles));
+		j_k = j_k(find(indices_grilles));
+	end
+	nombre_pixels_etudies = size(ind_1,1);
+	%Z_1 = z(:,:,1);
+	P_k = zeros(3, nombre_pixels_etudies, nombre_images);
+	P_k(:,:,1) = [(j_k - offset - u_0) / facteur_k, (i_k - offset - v_0) / facteur_k, z_a_regarder*ones(size(ind_1))].';
+
+	% Les poses relatives
+	R_1_k = zeros(3,3,nombre_images-1);
+	t_1_k = zeros(3,nombre_images-1);
+	for k = 1:nombre_images-1
+		R_1_k(:,:,k) = R(:,:,k+1) * R(:,:,1)';
+		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
+	end
+
+	% Création du patch
+	normale = [N(ind_1)' ; N(ind_1+nombre_lignes*nombre_colonnes)' ; N(ind_1+2*nombre_lignes*nombre_colonnes)'];
+	voisinage_ligne = -rayon_voisinage*nombre_lignes:nombre_lignes:rayon_voisinage*nombre_lignes;
+	voisinage_colonne = -rayon_voisinage:rayon_voisinage;
+	grille_voisinage = voisinage_ligne + voisinage_colonne';
+	grille_voisinage = grille_voisinage';
+
+	% Calcul du plan considéré
+	d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
+
+	% Calcul de la transformation géométrique
+	ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
+	[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
+	u_1_decales = (j_1_decales - offset - u_0) / facteur_k ;
+	v_1_decales = (i_1_decales - offset - v_0) / facteur_k;
+
+	normale_1 = repmat(normale(1,:)',1,taille_patch);
+	normale_2 = repmat(normale(2,:)',1,taille_patch);
+	normale_3 = repmat(normale(3,:)',1,taille_patch);
+	z_1_decales = -(d_equation_plan' + normale_1.*u_1_decales + normale_2.*v_1_decales)./normale_3;
+	clear ind_decales d_equation_plan normale normale_1 normale_2 normale_3;
+
+	% Reprojection du voisinage
+	i_2_voisinage = zeros(nombre_pixels_etudies, taille_patch, nombre_images-1);
+	j_2_voisinage = zeros(nombre_pixels_etudies, taille_patch, nombre_images-1);
+	u_1_decales_vec = reshape(u_1_decales',1,nombre_pixels_etudies*taille_patch);
+	v_1_decales_vec = reshape(v_1_decales',1,nombre_pixels_etudies*taille_patch);
+	z_1_decales_vec = reshape(z_1_decales',1,nombre_pixels_etudies*taille_patch);
+	clear u_1_decales v_1_decales z_1_decales;
+	P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
+	for k = 1:nombre_images-1
+		P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
+		P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
+		i_2_voisinage(:,:,k) = P_2_voisinage_ok(2:3:end,:) * facteur_k + offset + v_0;
+		j_2_voisinage(:,:,k) = P_2_voisinage_ok(1:3:end,:) * facteur_k + offset + u_0;
+	end
+
+	% Vérification des pixels hors images
+	condition_image = prod(prod( i_2_voisinage > 0.5 & i_2_voisinage <= nombre_lignes & j_2_voisinage > 0.5 & j_2_voisinage <= nombre_colonnes ,3),2);
+	condition_image = ones(nombre_pixels_etudies,1);
+	for k = 1:nombre_images-1
+		for l = 1:taille_patch
+			condition_image = condition_image & i_2_voisinage(:,l,k) > 0.5 & i_2_voisinage(:,l,k) <= nombre_lignes & j_2_voisinage(:,l,k) > 0.5 & j_2_voisinage(:,l,k) <= nombre_colonnes;
+		end
+	end
+
+	masque(:,:,1) = 0;
+	masque(ind_1) = condition_image;
 end
-
-% Déprojection et reprojection dans les autres images
-for k = 1:nombre_images-1
-	P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-	i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + v_0).';
-	j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + u_0).';
-end
-
-% Vérification des pixels hors images
-rayon_voisinage = 3;
-condition_image = ones(size(ind_1,1),1);
-for k = 1:nombre_images-1
-	condition_image = condition_image & i_k(:,k+1) > 0.5 + rayon_voisinage & i_k(:,k+1) <= nombre_lignes + 0.5 - rayon_voisinage & j_k(:,k+1) > 0.5 + rayon_voisinage & j_k(:,k+1) <= nombre_colonnes + 0.5 - rayon_voisinage;
-end
-
-masque(:,:,1) = reshape(condition_image, nombre_lignes, nombre_colonnes);
 
 
 %% Sauvegardes des données exploitables

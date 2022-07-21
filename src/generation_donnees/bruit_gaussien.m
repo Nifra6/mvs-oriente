@@ -5,7 +5,7 @@
 load ../../data/simulateur_formate.mat;
 
 %% Bruitage des données
-snr = 10;
+snr = 6;
 %bruit_g = (snr/255) * randn(size(I));
 bruit_g = (snr/255) * (rand(size(I))-0.5);
 I = I + bruit_g;

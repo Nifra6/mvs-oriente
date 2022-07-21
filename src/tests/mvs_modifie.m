@@ -1,13 +1,10 @@
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nombre_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,utilisation_normales_medianes)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nombre_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,utilisation_normales_medianes,grille_pixels)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation
 	estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs
 	affichage 		= 'Iteration';		% Type d'affichage de la progression
-	affichage_debug = 0;				% Affichage d'informations diverses
-	%rayon_voisinage = 1;				% Rayon du voisinage carré à prendre en compte
-	filtrage 		= sigma_filtre_grad >= 0 | sigma_filtre_I >= 0;% Utilisation d'un filtrage gaussien
-	grille_pixels	= 10;
+	offset 			= 0;				% Décalage spatial entre convention vision et computer
 
 	%% Données
 	% Fichier des données
@@ -24,7 +21,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		nombre_z = 1;
 	end
 	if (premiere_iteration)
-		valeurs_z = linspace(min(Z_1,[],'all'),max(Z_1,[],'all'),nombre_z);
+		if (surface == "plan_bis")
+			valeurs_z = linspace(4,6,nombre_z);
+		else
+			valeurs_z = linspace(min(Z_1,[],'all'),max(Z_1,[],'all'),nombre_z);
+		end
 	else
 		Z_1_estime = z_precedent;
 		valeurs_z = linspace(-espace_z,espace_z,nombre_z);	% Valeurs de profondeurs testées
@@ -38,14 +39,11 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		R_1_k(:,:,k) = R(:,:,k+1) * R(:,:,1)';
 		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
 	end
-	% TODO un truc plus propre pour ce qui suit
 	% Modifications du masque (pour correspondre aux patchs utilisés)
-	for k = 1:1
-		masque(1:rayon_voisinage,:,k) = 0;
-		masque(end-rayon_voisinage:end,:,k) = 0;
-		masque(:,1:rayon_voisinage,k) = 0;
-		masque(:,end-rayon_voisinage:end,k) = 0;
-	end
+	masque(1:rayon_voisinage,:,1) = 0;
+	masque(end-rayon_voisinage:end,:,1) = 0;
+	masque(:,1:rayon_voisinage,1) = 0;
+	masque(:,end-rayon_voisinage:end,1) = 0;
 	% Filtrage des pixels considérés par le masque
 	[i_k, j_k]  = find(masque(:,:,1));
 	ind_1		= sub2ind([nombre_lignes nombre_colonnes], i_k, j_k);
@@ -58,7 +56,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	end
 	nombre_pixels_etudies = size(ind_1,1);
 	P_k 		= zeros(3,nombre_pixels_etudies,nombre_images);
-	P_k(:,:,1) 	= [(j_k  - 0.5 - u_0) / facteur_k, (i_k - 0.5 - v_0) / facteur_k, zeros(length(i_k), 1)].';
+	P_k(:,:,1) 	= [(j_k  - offset - u_0) / facteur_k, (i_k - offset - v_0) / facteur_k, zeros(length(i_k), 1)].';
 	if (premiere_iteration)
 		z_grossiers_estimes = zeros(nombre_pixels_etudies,1);
 	else
@@ -67,20 +65,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 
 	%% Calcul du filtre
+	filtrage = sigma_filtre_grad >= 0 | sigma_filtre_I >= 0;
 	if (filtrage)
-		% Analytique
-		%rayon_masque = sigma_filtre * 4;
-		%taille_masque = (2*rayon_masque+1)^2;
-		%[x,y] = meshgrid(-rayon_masque:rayon_masque,-rayon_masque:rayon_masque);
-		%u_x = 0; u_y = 0;
-		%filtre = 1./(2*pi*sigma_filtre^2) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		%filtre = filtre / sum(filtre(:));
-		%dx_filtre = -(x-u_x)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		%dy_filtre = -(y-u_y)./(2*pi*sigma_filtre^4) .* exp(((x-u_x).^2+(y-u_y).^2)./(2*sigma_filtre^2));
-		%dx_filtre = dx_filtre;
-		%dy_filtre = dy_filtre;
-
-		% Fonctions Matlab
 		u_x = 0; u_y = 0;
 		if (sigma_filtre_I > 0)
 			cote_masque_I = ceil(4*sigma_filtre_I);
@@ -117,7 +103,10 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		else
 			% Gradient non filtré
 			[dx_I, dy_I] = gradient(I(:,:,k));
-			%[dx_I, dy_I] = gradient_correct(I(:,:,k),masque(:,:,k),1);
+			%dx_filtre = [0 0 0 ; 1 0 -1 ; 0 0 0];
+			%dy_filtre = [0 1 0 ; 0 0 0 ; 0 -1 0];
+			%dx_I = conv2(I(:,:,k),dx_filtre,'same');
+			%dy_I = conv2(I(:,:,k),dy_filtre,'same');
 		end
 		% Sauvegarde des gradients
 		dx_I_k(:,:,k) = dx_I;
@@ -125,9 +114,27 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	end
 	dx_I_1 = dx_I_k(:,:,1);
 	dy_I_1 = dy_I_k(:,:,1);
-	grad_I_1 	= [ dx_I_1(ind_1) , dy_I_1(ind_1) ].';
 	grad_I_x	= [dx_I_1(ind_1)'];
 	grad_I_y    = [dy_I_1(ind_1)'];
+
+
+
+
+	%{
+	figure;
+	imagesc(dx_I_k(:,:,1))
+	figure;
+	imagesc(dy_I_k(:,:,1))
+	figure;
+	imagesc(dx_I_k(:,:,2))
+	figure;
+	imagesc(dy_I_k(:,:,2))
+
+	format long;
+	t_1_k(:,1)
+	R_1_k(:,:,1)
+	format short;
+	%}
 
 	%% Construction du voisinage
 	voisinage_ligne = -rayon_voisinage*nombre_lignes:nombre_lignes:rayon_voisinage*nombre_lignes;
@@ -143,7 +150,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	n_estimes = zeros(3, nombre_pixels_etudies, nombre_z);
 
 	tic
-	%fprintf("\n")
 	for indice_z = 1:nombre_z
 
 		% Affichage de la progression des calculs
@@ -170,8 +176,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		%tic
 		for k = 1:nombre_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-			i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + 0.5 + v_0).';
-			j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + 0.5 + u_0).';
+			i_k(:,k+1) = (P_k(2,:,k+1) * facteur_k + offset + v_0).';
+			j_k(:,k+1) = (P_k(1,:,k+1) * facteur_k + offset + u_0).';
 		end
 		%toc
 
@@ -192,9 +198,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			j_k(:,k+1) = (ones(nombre_pixels_etudies,1) - condition_image(:,k)) + condition_image(:,k) .* j_k(:,k+1);
 			grad_I_x(k+1,:) = interp2(dx_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
 			grad_I_y(k+1,:) = interp2(dy_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
-			i_k(:,k+1) = round(i_k(:,k+1));
-			j_k(:,k+1) = round(j_k(:,k+1));
-			ind(:,k+1) = sub2ind([nombre_lignes nombre_colonnes], i_k(:,k+1), j_k(:,k+1));
 		end
 		%toc
 
@@ -218,12 +221,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% disp("Calcul des coefficients p et q")
 		% tic
 		if (utilisation_normales_medianes)
-			p_truc = zeros(nombre_images-1,nombre_pixels_etudies);
-			q_truc = zeros(nombre_images-1,nombre_pixels_etudies);
-			for k = 1:nombre_images-1
-				p_truc(k,:) = numerateur_x(k,:) ./ denominateur(k,:);
-				q_truc(k,:) = numerateur_y(k,:) ./ denominateur(k,:);
-			end
+			p_truc = numerateur_x ./ denominateur;
+			q_truc = numerateur_y ./ denominateur;
 			normale = normales_medianes_opti(p_truc,q_truc);
 		else
 			p_q = 0;
@@ -267,8 +266,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		%tic
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 		[i_1_decales, j_1_decales] = ind2sub([nombre_lignes, nombre_colonnes], ind_decales);
-		u_1_decales = (j_1_decales - 0.5 - u_0) / facteur_k ;
-		v_1_decales = (i_1_decales - 0.5 - v_0) / facteur_k;
+		u_1_decales = (j_1_decales - offset - u_0) / facteur_k ;
+		v_1_decales = (i_1_decales - offset - v_0) / facteur_k;
 
 		normale_1 = repmat(normale(1,:)',1,taille_patch);
 		normale_2 = repmat(normale(2,:)',1,taille_patch);
@@ -288,8 +287,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		for k = 1:nombre_images-1
 			P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
 			P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nombre_pixels_etudies))');
-			i_2_voisinage(:,:,k) = round(P_2_voisinage_ok(2:3:end,:) * facteur_k + 0.5 + v_0);
-			j_2_voisinage(:,:,k) = round(P_2_voisinage_ok(1:3:end,:) * facteur_k + 0.5 + u_0);
+			i_2_voisinage(:,:,k) = P_2_voisinage_ok(2:3:end,:) * facteur_k + offset + v_0;
+			j_2_voisinage(:,:,k) = P_2_voisinage_ok(1:3:end,:) * facteur_k + offset + u_0;
 		end
 		% toc
 
@@ -302,7 +301,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			I_k_voisinage = interp2(I_filtre(:,:,k+1),j_2_voisinage(:,:,k),i_2_voisinage(:,:,k),interpolation);
 			erreur_k(:,k) = prod(condition_image,2).*sum((I_1_voisinage-I_k_voisinage),2);
 		end
-		%erreur_k = erreur_k + 10 * (1 - condition_image);
+		%erreur_k = erreur_k + 1e10 * (1 - condition_image);
 		switch (estimateur)
 			case 'MSE'
 				erreurs(:,indice_z) = (1 / nombre_images) * sum(erreur_k.^2,2);
@@ -320,8 +319,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	%% Résultats
 
 	% Sélections des profondeurs avec l'erreur minimale
-	erreurs_corrigees = (erreurs ~= 0) .* erreurs + 1 * (erreurs == 0) .* ones(size(erreurs));
-	%erreurs_corrigees = erreurs;
+	%erreurs_corrigees = (erreurs ~= 0) .* erreurs + 1 * (erreurs == 0) .* ones(size(erreurs));
+	erreurs_corrigees = erreurs;
 	[~,indices_min] = min(erreurs_corrigees,[],2);
 	if (utilisation_profondeurs_GT)
 		z_in = Z_1(ind_1);

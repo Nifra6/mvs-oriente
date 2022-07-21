@@ -10,12 +10,13 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-liste_surface = ["gaussienne_1", "gaussienne_2", "sinc_1", "gaussienne_1_pepper"];
-liste_rayon_voisinage = 2:5;
+valeur_bruitage = 2;
+liste_surface = ["gaussienne_1", "gaussienne_1_pepper", "gaussienne_2", "sinc_1"];
+liste_nombre_vues = [2:9];
+liste_rayon_voisinage = 4;
 nombre_iteration = 1;
 ecart_type = -1;
 nombre_profondeur_iteration = 5000;
-liste_nombre_vues = [2 3 4 6 8 9];
 liste_modifiers = ["o:", "v--", "d-.", "s-"];
 reconstruction = "MVSm";
 

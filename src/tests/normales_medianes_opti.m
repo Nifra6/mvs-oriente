@@ -8,6 +8,7 @@ function normales = normales_medianes_opti(p_estimes,q_estimes)
 	% Calcul des normales
 	liste_normales = [p ; q ; -ones(1,nb_paire_image, nb_pixels)];
 	liste_normales = liste_normales ./ vecnorm(liste_normales);
+	%liste_normales = liste_normales ./ sqrt(p.^2 + q..^2 + ones(1,nb_paire_image,nb_pixels));
 
 	% Calcul des erreurs géodésiques
 	matrice_angles = zeros(nb_paire_image,nb_paire_image,nb_pixels);
