@@ -1,20 +1,20 @@
 % Reconstruire une surface via l'algorithme de Multi-View Stereo (ou MVS).
 % Utilisé par lancement_test.m
 
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,grille_pixels)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,utilisation_normales_medianes,grille_pixels)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation utilisée
 	estimateur		= 'MSE';			% Estimateur utilisé pour l'évaluation des erreurs photométriques
 	affichage 		= 'Iteration';		% Type d'affichage de la progression de l'algorithme
-	offset 			= 0;				% Décalage spatial entre les indices des pixels et leur coordonnées
+	offset 			= 0.5;				% Décalage spatial entre les indices des pixels et leur coordonnées
 
 
 	%% Données
 	% Chargement des fonctions utiles
 	addpath(genpath("../toolbox/"));
 	% Chargement des données
-	path = "../../data/";
+	path = "../../data/orthographique/";
 	nom_fichier = "simulateur_" + surface + "_formate.mat";
 	load(path+nom_fichier);
 	% Nombres d'images et de pixels considérés
@@ -45,10 +45,12 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
 	end
 	% Modifications du masque (pour correspondre aux patchs utilisés)
+	%{
 	masque(1:rayon_voisinage,:,1) = 0;
 	masque(end-rayon_voisinage:end,:,1) = 0;
 	masque(:,1:rayon_voisinage,1) = 0;
 	masque(:,end-rayon_voisinage:end,1) = 0;
+	%}
 	% Filtrage des pixels considérés par le masque
 	[i_k, j_k]  = find(masque(:,:,1));
 	ind_1		= sub2ind([nb_lignes nb_colonnes], i_k, j_k);
@@ -245,9 +247,9 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		end
 		switch (estimateur)
 			case 'MSE'
-				erreurs(:,indice_z) = (1 / sum(condition_image,2)) .* sum(erreur_k.^2,2);
+				erreurs(:,indice_z) = (1 ./ sum(condition_image,2)) .* sum(erreur_k.^2,2);
 			case 'Robuste'
-				erreurs(:,indice_z) = (1 / sum(condition_image,2)) .* (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+				erreurs(:,indice_z) = (1 ./ sum(condition_image,2)) .* (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 		end
 
 	end

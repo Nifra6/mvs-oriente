@@ -10,7 +10,7 @@ filtrage = 0;
 sigma_filtre = 4;
 
 %% Données
-load ../../data/simulateur_formate.mat;
+load ../../../data/simulateur_formate.mat;
 % Indices des images
 indice_premiere_image = 1;
 indice_deuxieme_image = 3;
@@ -55,7 +55,7 @@ if (filtrage)
 
 	% Filtrage de l'image
 	I_filtre = zeros(size(I));
-	for k = 1:nombre_images
+	for k = 1:nb_images
 		I_filtre(:,:,k) = conv2(I(:,:,k),filtre,'same');
 	end
 	I_filtre_1 = I_filtre(:,:,indice_premiere_image);
@@ -68,7 +68,7 @@ end
 %% Calcul des gradients
 dx_I_k = zeros(size(I));
 dy_I_k = zeros(size(I));
-for k = 1:nombre_images
+for k = 1:nb_images
 	if (filtrage)
 		% Gradient filtré
 		dx_I = conv2(I(:,:,k),dx_filtre,'same');
@@ -137,7 +137,7 @@ while (1)
 		end
 
 		% Vérification si pixel hors image
-		condition_image = i_2 > 0 & i_2 <= nombre_lignes & j_2 > 0 & j_2 <= nombre_colonnes;
+		condition_image = i_2 > 0 & i_2 <= nb_lignes & j_2 > 0 & j_2 <= nb_colonnes;
 
 		% Si le point reprojeté tombe sur le masque de la deuxième image
 		if (condition_image && masque_2(round(i_2),round(j_2)))
@@ -204,7 +204,7 @@ while (1)
 					disp("===== Les images récupérées")
 					I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage)
 					I_2_voisinage
-					indices_2_voisi = sub2ind([nombre_lignes nombre_colonnes], round(i_2_voisinage), round(j_2_voisinage));
+					indices_2_voisi = sub2ind([nb_lignes nb_colonnes], round(i_2_voisinage), round(j_2_voisinage));
 					I_2_voisinage_nearest = reshape(I_filtre_2(indices_2_voisi),2*rayon_voisinage+1,2*rayon_voisinage+1);
 					disp("===== Différences entre les images")
 					diff = I_filtre_1(i_1-rayon_voisinage:i_1+rayon_voisinage,j_1-rayon_voisinage:j_1+rayon_voisinage) - I_2_voisinage

@@ -58,7 +58,7 @@ for i_rayon_voisinage = 1:nb_rayon_voisinage
 			+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 			+ int2str(nombre_profondeur_iteration) + fichier_profondeur_GT + fichier_normale_GT ...
 			+ fichier_mediane + ".mat";
-		path = "../../result/tests/";
+		path = "../../result/tests/orthographique/";
 		load(path+nom_fichier);
 		% Extraction des données intéressantes
 		erreurs_moyennes_mvs(i_nombre_profondeur) = mean(erreur_z_mvs);

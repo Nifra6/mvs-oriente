@@ -10,18 +10,20 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 4;
+valeur_bruitage = 8;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
-surface = "calotte";
-nombre_vues = 3;
+surface = "gaussienne_decentree";
+surface = "plan_planche_11flou_16bit";
+perspectif = 0;
+nombre_vues = 9;
 rayon_voisinage = 4;
-ecart_type_grad = -5;
-ecart_type_I = -2.5;
-filtrage = 0;
+ecart_type_grad = 3;
+ecart_type_I = 0;
+filtrage = 1;
 nombre_profondeur_iteration = 5000;
-utilisation_profondeur_GT = 0;
+utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
-grille_pixel = 5;
+grille_pixel = 4;
 mesure = "median";
 mesure = "all";
 utilisation_mediane_normale = 1;
@@ -62,24 +64,25 @@ nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__pa
 	+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 	+ int2str(nombre_profondeur_iteration) + fichier_bruite + fichier_profondeur_GT ...
 	+ fichier_normale_GT + fichier_mediane + ".mat";
-path = "../../result/tests/";
+path = "../../result/tests/orthographique/";
 load(path+nom_fichier);
 grille_pixel = grille_pixels;
 
 % Préparation de la reconstruction
-load('../../data/simulateur_' + surface + '_formate.mat','nombre_lignes','nombre_colonnes','facteur_k','u_0','v_0','s','N','masque');
+path_data = '../../data/orthographique/simulateur_';
+load(path_data + surface + '_formate.mat','nb_lignes','nb_colonnes','facteur_k','u_0','v_0','s','N','masque');
 masque_1 = masque(:,:,1); clear masque;
 masque_1_shrink = masque_1(1:grille_pixel:end,1:grille_pixel:end);
 ind_1_shrink = find(masque_1_shrink);
 [i_k,j_k] = find(masque_1);
-ind_1 = sub2ind([nombre_lignes nombre_colonnes],i_k,j_k);
+ind_1 = sub2ind([nb_lignes nb_colonnes],i_k,j_k);
 indices_grille = (mod(i_k,grille_pixel) == 1) & (mod(j_k,grille_pixel) == 1);
 ind_1 = ind_1(find(indices_grille));
 N_1 = N(:,:,:,1); clear N;
-normales_GT = [N_1(ind_1)' ; N_1(ind_1 + nombre_lignes*nombre_colonnes)' ; N_1(ind_1 + 2*nombre_lignes*nombre_colonnes)'];
-X = 1:grille_pixel:nombre_colonnes;
+normales_GT = [N_1(ind_1)' ; N_1(ind_1 + nb_lignes*nb_colonnes)' ; N_1(ind_1 + 2*nb_lignes*nb_colonnes)'];
+X = 1:grille_pixel:nb_colonnes;
 X = (X - u_0) / facteur_k;
-Y = 1:grille_pixel:nombre_lignes;
+Y = 1:grille_pixel:nb_lignes;
 Y = (Y - v_0) / facteur_k;
 [X,Y] = meshgrid(X,Y);
 
@@ -127,12 +130,12 @@ normales_fronto(3,:) = -1;
 angles_mvs = angle_normale(normales_fronto,normales_mvs);
 angles_mvsm = angle_normale(normales_fronto,normales_mvsm);
 angles_GT = angle_normale(normales_fronto, normales_GT);
-color_map_value_GT = zeros(floor(nombre_lignes/grille_pixel),floor(nombre_colonnes/grille_pixel));
-color_map_value_mvs = zeros(floor(nombre_lignes/grille_pixel),floor(nombre_colonnes/grille_pixel));
-color_map_value_mvsm = zeros(floor(nombre_lignes/grille_pixel),floor(nombre_colonnes/grille_pixel));
+color_map_value_GT = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
+color_map_value_mvs = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
+color_map_value_mvsm = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
 
 zones_angles = 0:10:180;
-zones_angles = 0:10:60;
+zones_angles = 0:10:50;
 nombre_zones = size(zones_angles,2) - 1;
 erreurs_mvs_moy = zeros(1,nombre_zones);
 erreurs_mvs_med = zeros(1,nombre_zones);
@@ -166,7 +169,7 @@ if (~utilisation_profondeur_GT)
 		xlabel('Angles des normales avec la direction de la caméra de référence')
 		ylabel('Erreurs de profondeurs')
 	end
-	title(["Erreurs sur la surface " + surface ; "avec " + int2str(nombre_profondeur_iteration) + " échantillons" + complement_titre],'interpreter','none');
+	%title(["Erreurs sur la surface " + surface ; "avec " + int2str(nombre_profondeur_iteration) + " échantillons" + complement_titre],'interpreter','none');
 
 	% Affichage des nombres
 	xtips1 = b(1).XEndPoints;
@@ -177,9 +180,9 @@ if (~utilisation_profondeur_GT)
 end
 
 % Préparation de la reconstruction
-X = 1:grille_pixel:nombre_colonnes;
+X = 1:grille_pixel:nb_colonnes;
 X = (X - u_0) / facteur_k;
-Y = 1:grille_pixel:nombre_lignes;
+Y = 1:grille_pixel:nb_lignes;
 Y = (Y - v_0) / facteur_k;
 [X,Y] = meshgrid(X,Y);
 
@@ -194,7 +197,9 @@ ax.CLim = [0 5];
 grid off;
 colormap 'jet';
 axis equal;
-title("Relief MVS",'interpreter','none');
+%title("Relief MVS",'interpreter','none');
+title("Orientation des normales",'interpreter','none');
+colorbar;
 view([-90 90])
 
 if (~utilisation_profondeur_GT)
@@ -259,7 +264,7 @@ nombre_points_zones
 
 % Affichage de la reconstruction
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
-imagesc(map_erreur_angles_GT)
+imagesc(map_erreur_angles_GT')
 %sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_angles_GT);
 %sl.EdgeColor = 'none';
 %sl.CDataMapping = 'scaled';
@@ -270,7 +275,7 @@ grid off;
 colormap 'jet';
 colorbar
 axis equal;
-title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
+%title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
 
 
 map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));

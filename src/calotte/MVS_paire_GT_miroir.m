@@ -14,7 +14,7 @@ lambda = 0;				% Paramètre pour l'évaluation du score de la reprojection
 offset = 0;
 
 %% Variables utiles
-[i_1_liste,j_1_liste] = find(masque_1);
+[i_1_liste,j_1_liste] = find(masque_1_tr);
 nb_pixels_utilises = size(i_1_liste,1);
 nb_profondeurs_testees = size(valeurs_z,2);
 scores = 10 * ones(nb_pixels_utilises,1);
@@ -169,7 +169,7 @@ colorbar;
 title("Différences d'angles entre les normales fronto et les normales VT")
 axis equal;
 
-
+%{
 figure;
 s = surf(X_tr,Y_tr,Z_1_tr);
 s.EdgeColor = 'none';
@@ -182,3 +182,4 @@ format long;
 R_2_tr
 t_2_tr
 format short;
+%}

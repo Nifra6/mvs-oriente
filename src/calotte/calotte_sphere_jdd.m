@@ -4,7 +4,9 @@ taille_ecran = get(0,'ScreenSize');
 L = taille_ecran(3);
 H = taille_ecran(4);
 
-t = 256;				% Taille des images
+load pose.mat;
+
+t = 200;				% Taille des images
 t_sur_2 = t/2;
 
 % Matrices de coordonnées (abscisses orientées vers la droite, ordonnées vers le bas) :
@@ -16,7 +18,7 @@ valeurs_Y_1 = (1:t)-t_sur_2;
 
 % Paramètres de la calotte de sphère :
 R = 0.9*t_sur_2;			% Rayon de la sphère
-O_1 = [ 0 ; 0 ; t ];			% Coordonnées du centre de la sphère
+O_1 = [ 0 ; 0 ; t ];		% Coordonnées du centre de la sphère
 alpha = 0.7;				% Proportion entre les rayons des silhouettes
 r = alpha*R;				% Rayon de la calotte
 
@@ -94,6 +96,9 @@ Rotation_2 = [ 1 0 0 ; 0 c_2 -s_2 ; 0 s_2 c_2 ];
 Rotation = Rotation_2*Rotation_1;
 translation = [ s_1*O_1(3) ; 0 ; (1-c_1)*O_1(3)+50 ];
 %translation = [0 ; 0 ; 0];
+
+
+
 % Coordonnées du centre de la sphère dans le deuxième repère :
 O_2 = Rotation'*(O_1-translation);
 

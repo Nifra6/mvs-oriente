@@ -62,7 +62,7 @@ for i_surface = 1:nb_surface
 				+ "__filtre_" + int2str(ecart_type_grad) + fichier_profondeur_GT ...
 				+ fichier_normale_GT + ".mat";
 		end
-		path = "../../result/tests/";
+		path = "../../result/tests/orthographique/";
 		load(path+nom_fichier);
 		% Extraction des données intéressantes
 		erreurs_angulaires_moyennes(i_ecart_type_grad) = erreur_angle_moy;
@@ -95,7 +95,7 @@ for i_surface = 1:nb_surface
 				+ int2str(nombre_profondeur_iteration) + "__bruite_" + int2str(valeur_bruitage) ...
 				+ "__filtre_I_" + int2str(ecart_type_I) + "__filtre_grad_" ...
 				+ int2str(ecart_type_grad_lock) + fichier_profondeur_GT + fichier_normale_GT + ".mat";
-			path = "../../result/tests/";
+			path = "../../result/tests/orthographique/";
 			load(path+nom_fichier);
 			% Extraction des données intéressantes
 			erreurs_z_moy(i_ecart_type_I) = mean(erreur_z_mvsm);

@@ -68,7 +68,7 @@ for i_surface = 1:nb_surface
 				+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 				+ int2str(nombre_profondeur_iteration) + fichier_profondeur_GT ...
 				+ fichier_normale_GT + fichier_mediane + ".mat";
-			path = "../../result/tests/";
+			path = "../../result/tests/orthographique/";
 			load(path+nom_fichier);
 			% Extraction des données intéressantes
 			switch (reconstruction)
@@ -91,7 +91,7 @@ for i_surface = 1:nb_surface
 	grid on;
 	titre = "Erreurs sur la surface " + surface + ", " + int2str(nombre_profondeur_iteration) + " profondeurs testées";
 	complement_titre = "Voisinages " + int2str(taille_patch) + "x" + int2str(taille_patch);
-	title([titre,complement_titre]);
+	%title([titre,complement_titre]);
 	xlabel("Nombre de vues utilisées");
 	ylabel("Erreurs de profondeur");
 	%legend(legende,'Location','best');

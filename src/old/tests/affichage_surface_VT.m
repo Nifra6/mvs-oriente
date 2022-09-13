@@ -10,24 +10,27 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-surface = "gaussienne_2";
+surface = "calotte_sim";
 
 %% Variables
-path = "../../data/";
+path = "../../../data/";
 fichier_surface = "simulateur_" + surface + "_formate.mat";
 load(path+fichier_surface);
 
 %% Algorithme
 % Préparation
-X = 1:nombre_colonnes;
+X = 1:nb_colonnes;
 X = (X - u_0) / facteur_k;
-Y = 1:nombre_lignes;
+Y = 1:nb_lignes;
 Y = (Y - v_0) / facteur_k;
 [X,Y] = meshgrid(X,Y);
+Z = z(:,:,1);
+ind_z_0 = find(Z == 0);
+Z(ind_z_0) = nan;
 
 % Affichage surface
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
-sl = surfl(X,Y,-z(:,:,1),s);
+sl = surfl(X,Y,-Z,s);
 sl.EdgeColor = 'none';
 grid off;
 colormap gray;

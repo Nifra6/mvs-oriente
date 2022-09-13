@@ -51,7 +51,7 @@ for i_surface = 1:nb_surface
 			% Chargement des résultats
 			nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" ...
 				+ int2str(taille_patch) + "__nb_profondeur_" + int2str(nombre_profondeur_iteration) + ".mat";
-			path = "../../result/tests/";
+			path = "../../result/tests/orthographique/";
 			load(path+nom_fichier);
 			% Extraction des données intéressantes
 			switch (reconstruction)

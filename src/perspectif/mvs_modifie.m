@@ -14,7 +14,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% Chargement des fonctions utiles
 		addpath(genpath("../toolbox/"));
 	% Chargement des données
-	path = "../../data/";
+	path = "../../data/perspectif/";
 	nom_fichier = "simulateur_" + surface + "_formate.mat";
 	load(path+nom_fichier);
 	% Nombres d'images et de pixels considérés
@@ -67,7 +67,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	v_k 		= zeros(nb_pixels_etudies,nb_images);
 	u_k(:,1)	= j_k - offset;
 	v_k(:,1)	= i_k - offset;
-	p_1			= [u_1 , v_1 , zeros(nb_pixels_etudies,1)]';
+	p_1			= [u_k(:,1) , v_k(:,1) , ones(nb_pixels_etudies,1)]';
 	if (premiere_iteration)
 		z_grossiers_estimes = zeros(nb_pixels_etudies,1);
 	else
@@ -155,21 +155,22 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% Sélection d'une profondeur
 		valeur_z 	= z_grossiers_estimes + valeurs_z(indice_z);
 		if (utilisation_profondeurs_GT)
-			p_1(3,:) = Z_VT(ind_1);
+			Z = repmat(Z_VT(ind_1)',3,1);
 		else
-			p_1(3,:) = valeur_z;
+			Z = repmat(valeur_z',3,1);
 		end
-		P_k(:,:,1) = K_inv * p_1;
+		P_k(:,:,1) = Z .* (K_inv * p_1);
 
 		% Changements de repère
 		for k = 1:nb_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-			p_k = K * P_k(:,:,k+1);
+			p_k = (K * P_k(:,:,k+1)) ./ P_k(3,:,k+1);
 			u_k(:,k+1) = p_k(1,:)';
 			v_k(:,k+1) = p_k(2,:)';
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
 		end
+
 
 		% Vérification des pixels hors images
 		condition_image = ones(nb_pixels_etudies,nb_images-1);
@@ -193,13 +194,13 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		deplacement_1 = [u_0 - u_k(:,1) , v_0 - v_k(:,1)];
 		grad_I_1 = [grad_I_x(1,:); grad_I_y(1,:)];
 		for k = 1:nb_images-1
-			coeff_z_k = 1 / P_k(3,:,k+1);
+			coeff_z_k = 1 ./ P_k(3,:,k+1);
 			deplacement_k = [u_0 - u_k(:,k+1) , v_0 - v_k(:,k+1)];
 			grad_I_k = [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-			numerateur = f * coeff_z_1 * grad_I_1 - coeff_z_k * (f * R_1_k(1:2,1:2,k)' * grad_I_k + R_1_k(3,1:2)' * sum(deplacement_k'.*grad_I_k,1));
+			numerateur = f * coeff_z_1 * grad_I_1 - repmat(coeff_z_k,2,1) .* (f * R_1_k(1:2,1:2,k)' * grad_I_k + R_1_k(3,1:2)' * sum(deplacement_k'.*grad_I_k,1));
 			numerateur_x(k,:) = numerateur(1,:);
 			numerateur_y(k,:) = numerateur(2,:);			
-			denominateur(k,:) = coeff_z_1 * sum(deplacement_1'.*grad_I_1,1) + coeff_z_k * (R_1_k(1:2,3,k)' * grad_I_k + R_1_k(3,3,k) * sum(deplacement_k'.*grad_I_k,1));
+			denominateur(k,:) = coeff_z_1 * sum(deplacement_1'.*grad_I_1,1) + coeff_z_k .* (R_1_k(1:2,3,k)' * grad_I_k + R_1_k(3,3,k) * sum(deplacement_k'.*grad_I_k,1));
 		end
 		clear coeff_z_1 coeff_z_k grad_I_1 grad_I_k numerateur;
 
@@ -221,7 +222,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 			% Calcul de la normale
 			normale = [p_estim ; q_estim ; -ones(1,nb_pixels_etudies)] ...
-			./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
+				./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
 		end
 
 		if (utilisation_normale_GT)
@@ -230,7 +231,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		n_estimes(:,:,indice_z) = normale;
 
 		% Calcul du plan considéré
-		d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
+		d_equation_plan = sum(-P_k(:,:,1) .* normale,1); % Euh ... c'est faux en perspectif, nan ?
 
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
@@ -249,10 +250,10 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
 		z_1_decales_vec = reshape(z_1_decales',1,nb_pixels_etudies*taille_patch);
-		P_1_voisinage = K_inv * [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
+		P_1_voisinage = z_1_decales_vec .* (K_inv * [u_1_decales_vec ; v_1_decales_vec ; ones(size(u_1_decales_vec))]);
 		for k = 1:nb_images-1
 			P_k_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
-			p_k_voisinage = K * P_k_voisinage;
+			p_k_voisinage = (K * P_k_voisinage) ./ P_k_voisinage(3,:);
 			P_k_voisinage_ok = cell2mat(mat2cell(p_k_voisinage,3,repmat(taille_patch,1,nb_pixels_etudies))');
 			u_k_voisinage = P_k_voisinage_ok(1:3:end,:);
 			v_k_voisinage = P_k_voisinage_ok(2:3:end,:);
@@ -269,9 +270,9 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		end
 		switch (estimateur)
 			case 'MSE'
-				erreurs(:,indice_z) = (1 / sum(condition_image,2)) .* sum(erreur_k.^2,2);
+				erreurs(:,indice_z) = (1 ./ sum(condition_image,2)) .* sum(erreur_k.^2,2);
 			case 'Robuste'
-				erreurs(:,indice_z) = (1 / sum(condition_image,2)) .* (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
+				erreurs(:,indice_z) = (1 ./ sum(condition_image,2)) .* (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 		end
 
 	end

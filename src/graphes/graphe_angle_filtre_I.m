@@ -10,7 +10,7 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 2;
+valeur_bruitage = 4;
 liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage), "gaussienne_1_pepper_bruitee_" ...
 	+ int2str(valeur_bruitage), "gaussienne_2_bruitee_" + int2str(valeur_bruitage), "sinc_1_bruitee_" ...
 	+ int2str(valeur_bruitage)];
@@ -67,7 +67,7 @@ for i_surface = 1:nb_surface
 			+ "__filtre_I_" + int2str(ecart_type_I) + "__filtre_grad_" ...
 			+ int2str(ecart_type_grad_lock) + fichier_profondeur_GT + fichier_normale_GT ...
 			+ fichier_mediane + ".mat";
-		path = "../../result/tests/";
+		path = "../../result/tests/orthographique/";
 		load(path+nom_fichier);
 		% Extraction des données intéressantes
 		erreurs_z = [erreurs_z ; erreur_z_mvsm];

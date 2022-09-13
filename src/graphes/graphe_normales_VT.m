@@ -63,11 +63,11 @@ nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__pa
 	+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 	+ int2str(nombre_profondeur_iteration) + fichier_bruite + fichier_profondeur_GT ...
 	+ fichier_normale_GT + fichier_mediane + ".mat";
-path = "../../result/tests/";
+path = "../../result/tests/orthographique/";
 load(path+nom_fichier);
 
 % Préparation de la reconstruction
-load('../../data/simulateur_' + surface + '_formate.mat','nombre_lignes','nombre_colonnes','facteur_k','u_0','v_0','s','N','masque','z');
+load('../../data/orthographique/simulateur_' + surface + '_formate.mat','nombre_lignes','nombre_colonnes','facteur_k','u_0','v_0','s','N','masque','z');
 masque_1 = masque(:,:,1); clear masque;
 grille_pixel = 10;
 masque_1_shrink = masque_1(1:grille_pixel:end,1:grille_pixel:end);

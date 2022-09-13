@@ -66,7 +66,7 @@ for i_surface = 1:nb_surface
 				+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 				+ int2str(nombre_profondeur_iteration) + fichier_profondeur_GT ...
 				+ fichier_normale_GT + fichier_mediane + ".mat";
-			path = "../../result/tests/";
+			path = "../../result/tests/orthographique/";
 			load(path+nom_fichier);
 			% Extraction des données intéressantes
 			switch (reconstruction)
