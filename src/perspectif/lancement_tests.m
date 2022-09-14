@@ -22,7 +22,7 @@ liste_surface = ["gaussienne_1_pepper_bruitee_" ...
 liste_surface = ["gaussienne_1", "gaussienne_1_pepper", "gaussienne_2", "sinc_1"];
 %liste_surface = ["gaussienne_1_bis", "gaussienne_1_pepper_bis", "gaussienne_2_bis", "sinc_1_bis"];
 liste_surface = ["gaussienne_decentree"];
-liste_rayon_voisinage = [0];
+liste_rayon_voisinage = [4];
 nombre_iteration = 1;
 %liste_ecart_type_I = [0:0.5:3];
 liste_ecart_type_I = -1;
@@ -32,8 +32,8 @@ filtrage = 0;
 grille_pixels = 10;
 liste_nombre_vues = [9];
 liste_nombre_profondeur_iteration = [1000];
-utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+utilisation_profondeur_GT = 1;
+utilisation_normale_GT = 0;
 utilisation_mediane_normale = 1;
 
 %% Variables

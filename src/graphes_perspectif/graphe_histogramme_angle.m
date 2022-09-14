@@ -14,13 +14,13 @@ valeur_bruitage = 4;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
 surface = "gaussienne_decentree";
 nombre_vues = 9;
-rayon_voisinage = 0;
+rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
 nombre_profondeur_iteration = 1000;
-utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+utilisation_profondeur_GT = 1;
+utilisation_normale_GT = 0;
 grille_pixel = 4;
 mesure = "median";
 mesure = "all";
@@ -78,26 +78,26 @@ indices_grille = (mod(i_k,grille_pixel) == 1) & (mod(j_k,grille_pixel) == 1);
 ind_1 = ind_1(find(indices_grille));
 N_1 = N(:,:,:,1); clear N;
 normales_GT = [N_1(ind_1)' ; N_1(ind_1 + nb_lignes*nb_colonnes)' ; N_1(ind_1 + 2*nb_lignes*nb_colonnes)'];
-X = 1:grille_pixel:nb_colonnes;
-Y = 1:grille_pixel:nb_lignes;
-X = X - u_0;
-Y = Y - v_0;
-[X,Y] = meshgrid(X,Y);
+X_o = 1:grille_pixel:nb_colonnes;
+Y_o = 1:grille_pixel:nb_lignes;
+X_o = X_o - u_0;
+Y_o = Y_o - v_0;
+[X_o,Y_o] = meshgrid(X_o,Y_o);
 
 % Préparation des erreurs
-map_erreur_mvs = zeros(size(X,2),size(Y,2));
-map_erreur_mvsm = zeros(size(X,2),size(Y,2));
+map_erreur_mvs = zeros(size(X_o,2),size(Y_o,2));
+map_erreur_mvsm = zeros(size(X_o,2),size(Y_o,2));
 size(ind_1_shrink)
 size(erreur_z_mvs)
 map_erreur_mvs(ind_1_shrink) = erreur_z_mvs;
-size(X)
+size(X_o)
 size(ind_1_shrink)
 size(erreur_z_mvsm)
 map_erreur_mvsm(ind_1_shrink) = erreur_z_mvsm;
 min_c_map = min([min(erreur_z_mvs) min(erreur_z_mvsm)]);
 max_c_map = max([max(erreur_z_mvs) max(erreur_z_mvsm)]);
 
-map_erreur_angles_GT = zeros(size(X,2),size(Y,2));
+map_erreur_angles_GT = zeros(size(X_o,2),size(Y_o,2));
 erreurs_angles_GT = angle_normale(normales_GT,normales_mvsm);
 map_erreur_angles_GT(ind_1_shrink) = erreurs_angles_GT;
 
@@ -178,13 +178,12 @@ if (~utilisation_profondeur_GT)
 end
 
 % Préparation de la reconstruction
-Z = -z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
-[nb_l,nb_c] = size(X);
+Z = z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
+[nb_l,nb_c] = size(X_o);
 R_inv = R(:,:,1)'
 t_inv = - R_inv * t(:,1);
-P = R_inv * (inv(K) * [X(:) , Y(:) , Z(:)]') + t_inv;
-%P = R(:,:,1) * (inv(K) * [X(:) , Y(:) , Z(:)]') + t(:,1);
-%P = inv(K) * [X(:) , Y(:) , Z(:)]';
+p = repmat(Z(:)',3,1) .* (inv(K) * [X_o(:)' ; Y_o(:)' ; ones(1,nb_c*nb_l)]);
+P = R_inv * p  + t_inv;
 X = P(1,:);
 Y = P(2,:);
 Z = P(3,:);
@@ -196,7 +195,7 @@ Z = reshape(Z,nb_l,nb_c);
 % Affichage de la reconstruction
 figure('Name','Relief MVS','Position',[0,0,0.33*L,0.5*H]);
 subplot(2,1,1);
-sl = surf(X,Y,-Z,color_map_value_GT);
+sl = surf(X,Y,Z,color_map_value_GT);
 sl.EdgeColor = 'none';
 sl.CDataMapping = 'scaled';
 ax = gca;
@@ -228,10 +227,25 @@ if (~utilisation_profondeur_GT)
 	view([-90 90]);
 end
 
+% Préparation de la reconstruction
+Z = z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end);
+[nb_l,nb_c] = size(X_o);
+R_inv = R(:,:,1)'
+t_inv = - R_inv * t(:,1);
+p = repmat(Z(:)',3,1) .* (inv(K) * [X_o(:)' ; Y_o(:)' ; ones(1,nb_c*nb_l)]);
+P = R_inv * p  + t_inv;
+X = P(1,:);
+Y = P(2,:);
+Z = P(3,:);
+X = reshape(X,nb_l,nb_c);
+Y = reshape(Y,nb_l,nb_c);
+Z = reshape(Z,nb_l,nb_c);
+
+
 % Affichage de la reconstruction
 figure('Name','Relief MVS modifié','Position',[0,0,0.33*L,0.5*H]);
 subplot(2,1,1);
-sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),color_map_value_GT);
+sl = surf(X,Y,Z,color_map_value_GT);
 sl.EdgeColor = 'none';
 sl.CDataMapping = 'scaled';
 ax = gca;

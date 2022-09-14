@@ -20,20 +20,23 @@ load(path+fichier_surface);
 %% Algorithme
 % Préparation
 X = 1:nb_colonnes;
-X = (X - u_0) / 200;
 Y = 1:nb_lignes;
-Y = (Y - v_0) / 200;
 [X,Y] = meshgrid(X,Y);
 Z = z(:,:,1);
 ind_z_0 = find(Z == 0);
 Z(ind_z_0) = nan;
+p = repmat(Z(:)',3,1) .* (inv(K) * [X(:)' ; Y(:)' ; ones(1,nb_lignes*nb_colonnes)]);
+P = R(:,:,1)' * p - R(:,:,1)' * t(:,1);
+X = reshape(P(1,:),nb_lignes,nb_colonnes);
+Y = reshape(P(2,:),nb_lignes,nb_colonnes);
+Z = reshape(P(3,:),nb_lignes,nb_colonnes);
 
 % Affichage surface
 figure('Name','Relief','Position',[0,0,0.33*L,0.5*H]);
-sl = surfl(X,Y,-Z,s);
+sl = surf(X,Y,Z,I(:,:,1));
 sl.EdgeColor = 'none';
 grid off;
-colormap gray;
+%colormap gray;
 axis equal;
 
 % Affichage
