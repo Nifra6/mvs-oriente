@@ -1,7 +1,7 @@
 % Reconstruire une surface via l'algorithme de Multi-View Stereo (ou MVS).
 % Utilisé par lancement_test.m
 
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,utilisation_normales_medianes,grille_pixels)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,grille_pixels)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation utilisée
@@ -74,18 +74,13 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 
 
 	%% Calcul du filtre
-	filtrage = sigma_filtre_grad >= 0 | sigma_filtre_I >= 0;
-	if (filtrage)
-		if (sigma_filtre_I > 0)
-			cote_masque_I = ceil(4*sigma_filtre_I);
-			filtre_I = fspecial('gauss',cote_masque_I,sigma_filtre_I);
-			filtre_I = filtre_I / sum(filtre_I(:));
-			I_filtre = zeros(size(I));
-			for k = 1:nb_images
-				I_filtre(:,:,k) = conv2(I(:,:,k),filtre_I,'same');
-			end
-		else
-			I_filtre = I;
+	if (sigma_filtre_I > 0)
+		cote_masque_I = ceil(4*sigma_filtre_I);
+		filtre_I = fspecial('gauss',cote_masque_I,sigma_filtre_I);
+		filtre_I = filtre_I / sum(filtre_I(:));
+		I_filtre = zeros(size(I));
+		for k = 1:nb_images
+			I_filtre(:,:,k) = conv2(I(:,:,k),filtre_I,'same');
 		end
 	else
 		I_filtre = I;
@@ -133,10 +128,10 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
 			%if k == 2
-				%[i_k(1303,1) , j_k(1303,1)]
-				%P_k(:,1303,1)
-				%P_k(:,1303,3)
-				%[i_k(1303,3) , j_k(1303,3)]
+			%[i_k(1303,1) , j_k(1303,1)]
+			%P_k(:,1303,1)
+			%P_k(:,1303,3)
+			%[i_k(1303,3) , j_k(1303,3)]
 			%end
 		end
 
