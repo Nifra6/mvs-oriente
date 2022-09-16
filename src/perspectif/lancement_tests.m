@@ -32,8 +32,8 @@ filtrage = 0;
 grille_pixels = 10;
 liste_nombre_vues = [9];
 liste_nombre_profondeur_iteration = [1000];
-utilisation_profondeur_GT = 1;
-utilisation_normale_GT = 0;
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 utilisation_mediane_normale = 1;
 
 %% Variables
