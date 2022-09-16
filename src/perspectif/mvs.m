@@ -127,7 +127,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			v_k(:,k+1) = p_k(2,:)';
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
-			%if k == 2
+			%if k == 2   % Debug
 			%[i_k(1303,1) , j_k(1303,1)]
 			%P_k(:,1303,1)
 			%P_k(:,1303,3)
@@ -213,6 +213,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		n_totales_ind(k,:) = n_totales(k,ind_1);
 	end
 
+	% Sauvegarde de la zone de recherche
 	if (utilisation_profondeurs_GT)
 		espace_z_suivant = 0;
 	else
