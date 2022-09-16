@@ -35,8 +35,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	if (utilisation_profondeurs_GT)
 		nb_z = 1;
 	end
-	% Les normales (pour analyser des résultats avec vérité terrain)
-	N_VT = N(:,:,:,1);
 	% Les poses relatives des caméras
 	R_1_k = zeros(3,3,nb_images-1);
 	t_1_k = zeros(3,nb_images-1);
@@ -78,7 +76,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	%% Calcul du filtre
 	filtrage = sigma_filtre_grad >= 0 | sigma_filtre_I >= 0;
 	if (filtrage)
-		u_x = 0; u_y = 0;
 		if (sigma_filtre_I > 0)
 			cote_masque_I = ceil(4*sigma_filtre_I);
 			filtre_I = fspecial('gauss',cote_masque_I,sigma_filtre_I);
@@ -90,49 +87,15 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		else
 			I_filtre = I;
 		end
-		if (sigma_filtre_grad > 0)
-			cote_masque_grad = ceil(4*sigma_filtre_grad);
-			filtre_grad = fspecial('gauss',cote_masque_grad,sigma_filtre_grad);
-			filtre_grad = filtre_grad / sum(filtre_grad(:));
-			dx_conv = [0 0 0 ; 1 0 -1 ; 0 0 0];
-			dy_conv = [0 1 0 ; 0 0 0 ; 0 -1 0];
-			dx_filtre = conv2(filtre_grad,dx_conv);
-			dy_filtre = conv2(filtre_grad,dy_conv);
-		end
 	else
 		I_filtre = I;
 	end
-
-
-	%% Calcul des gradients
-	dx_I_k = zeros(size(I));
-	dy_I_k = zeros(size(I));
-	for k = 1:nb_images
-		if (sigma_filtre_grad > 0)
-			% Gradient filtré
-			dx_I = conv2(I(:,:,k),dx_filtre,'same');
-			dy_I = conv2(I(:,:,k),dy_filtre,'same');
-		else
-			% Gradient non filtré
-			[dx_I, dy_I] = gradient(I(:,:,k));
-		end
-		% Sauvegarde des gradients
-		dx_I_k(:,:,k) = dx_I;
-		dy_I_k(:,:,k) = dy_I;
-	end
-	dx_I_1 = dx_I_k(:,:,1);
-	dy_I_1 = dy_I_k(:,:,1);
-	grad_I_x	= [dx_I_1(ind_1)'];
-	grad_I_y    = [dy_I_1(ind_1)'];
 
 	%% Construction du voisinage
 	voisinage_ligne = -rayon_voisinage*nb_lignes:nb_lignes:rayon_voisinage*nb_lignes;
 	voisinage_colonne = -rayon_voisinage:rayon_voisinage;
 	grille_voisinage = voisinage_ligne + voisinage_colonne';
 	grille_voisinage = grille_voisinage';
-
-	%% Mise en forme des normales
-	normale_theorique = [N_VT(ind_1)' ; N_VT(ind_1 + nb_pixels)' ; N_VT(ind_1 + 2*nb_pixels)'];
 
 	%% Boucle de reconstruction
 	erreurs	= 10*ones(nb_pixels_etudies, nb_z);
@@ -184,57 +147,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			condition_image(:,k) = i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nb_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nb_colonnes;
 		end
 
-		% Calcul des gradients (pour des analyses de résultats)
-		for k = 1:nb_images-1
-			i_k(:,k+1) = ~condition_image(:,k) + condition_image(:,k) .* i_k(:,k+1);
-			j_k(:,k+1) = ~condition_image(:,k) + condition_image(:,k) .* j_k(:,k+1);
-			grad_I_x(k+1,:) = interp2(dx_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
-			grad_I_y(k+1,:) = interp2(dy_I_k(:,:,k+1),j_k(:,k+1),i_k(:,k+1),interpolation)';
-		end
-
-		% Calcul des numérateurs et dénominateurs (pour des analyses de résultats)
-		numerateur_x = [];
-		numerateur_y = [];
-		denominateur = [];
-		coeff_z_1 = 1 / p_1(3,1);
-		deplacement_1 = [u_0 - u_k(:,1) , v_0 - v_k(:,1)];
-		grad_I_1 = [grad_I_x(1,:); grad_I_y(1,:)];
-		for k = 1:nb_images-1
-			coeff_z_k = 1 ./ P_k(3,:,k+1);
-			deplacement_k = [u_0 - u_k(:,k+1) , v_0 - v_k(:,k+1)];
-			grad_I_k = [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-			numerateur = f * coeff_z_1 * grad_I_1 - repmat(coeff_z_k,2,1) .* (f * R_1_k(1:2,1:2,k)' * grad_I_k + R_1_k(3,1:2)' * sum(deplacement_k'.*grad_I_k,1));
-			numerateur_x(k,:) = numerateur(1,:);
-			numerateur_y(k,:) = numerateur(2,:);
-			denominateur(k,:) = coeff_z_1 * sum(deplacement_1'.*grad_I_1,1) + coeff_z_k .* (R_1_k(1:2,3,k)' * grad_I_k + R_1_k(3,3,k) * sum(deplacement_k'.*grad_I_k,1));
-		end
-		clear coeff_z_1 coeff_z_k grad_I_1 grad_I_k numerateur;
-
-		% Estimation de la normale (pour des analyses de résultats)
-		if (utilisation_normales_medianes)
-			p_truc = numerateur_x ./ denominateur;
-			q_truc = numerateur_y ./ denominateur;
-			normale = normales_medianes(p_truc,q_truc);
-		else
-			% Calcul des coefficients p et q
-			p_q = 0;	
-			for k = 1:nb_images-1
-				p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
-			end
-			p_q 	= p_q ./ sum(denominateur.^2, 1);
-			p_estim = p_q(1, :);
-			q_estim = p_q(2, :);
-			clear p_q denominateur numerateur_x numerateur_y;
-
-			% Calcul de la normale (pour des analyses de résultats)
-			normale = [p_estim ; q_estim ; -ones(1,nb_pixels_etudies)] ...
-				./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
-		end
-
-		if (utilisation_normale_GT)
-			normale = normale_theorique;
-		end
-		n_estimes(:,:,indice_z) = normale;
+		n_estimes(:,:,indice_z) = zeros(3,nb_pixels_etudies);
+		n_estimes(3,:,indice_z) = -1;
 
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
