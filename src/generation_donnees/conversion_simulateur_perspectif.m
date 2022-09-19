@@ -4,8 +4,8 @@
 % analyser les résultats avec la vérité terrain.
 
 %% Paramètres
-filtrage_points	= 0;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
-masque_calotte	= 1;
+filtrage_points	= 1;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
+masque_calotte	= 0;
 
 %% Chargement des données
 load ../../data/perspectif/simulateur.mat;
@@ -72,11 +72,12 @@ N(:,:,:,indice_image_reference+1:end) = N_to_sort(:,:,:,indice_image_reference+1
 
 %% Optionel - Retirer les points masqués dans certaines images
 if (filtrage_points)
-	grille_pixels = 10;
+	grille_pixels = 5;
 	rayon_voisinage = 15;
 	offset = 0.5;
 	taille_patch = (2 * rayon_voisinage + 1)^2;
 	liste_z_a_regarder = [min(z(:,:,1),[],'all'), max(z(:,:,1),[],'all')];
+	K_inv = inv(K);
 
 	for i_z = 1:size(liste_z_a_regarder,2)
 		z_a_regarder = liste_z_a_regarder(i_z); 
@@ -93,8 +94,9 @@ if (filtrage_points)
 		end
 		nb_pixels_etudies = size(ind_1,1);
 		%Z_1 = z(:,:,1);
+		p_1 = [j_k - offset , i_k - offset , ones(size(i_k))]';
 		P_k = zeros(3, nb_pixels_etudies, nb_images);
-		P_k(:,:,1) = [(j_k - offset - u_0) / facteur_k, (i_k - offset - v_0) / facteur_k, z_a_regarder*ones(size(ind_1))].';
+		P_k(:,:,1) = z_a_regarder * (K_inv * p_1);
 
 		% Les poses relatives
 		R_1_k = zeros(3,3,nb_images-1);
@@ -117,28 +119,23 @@ if (filtrage_points)
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 		[i_1_decales, j_1_decales] = ind2sub([nb_lignes, nb_colonnes], ind_decales);
-		u_1_decales = (j_1_decales - offset - u_0) / facteur_k ;
-		v_1_decales = (i_1_decales - offset - v_0) / facteur_k;
-
-		normale_1 = repmat(normale(1,:)',1,taille_patch);
-		normale_2 = repmat(normale(2,:)',1,taille_patch);
-		normale_3 = repmat(normale(3,:)',1,taille_patch);
-		z_1_decales = -(d_equation_plan' + normale_1.*u_1_decales + normale_2.*v_1_decales)./normale_3;
-		clear ind_decales d_equation_plan normale normale_1 normale_2 normale_3;
+		u_1_decales = j_1_decales - offset;
+		v_1_decales = i_1_decales - offset;
 
 		% Reprojection du voisinage
 		i_2_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		j_2_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
-		z_1_decales_vec = reshape(z_1_decales',1,nb_pixels_etudies*taille_patch);
-		clear u_1_decales v_1_decales z_1_decales;
-		P_1_voisinage = [u_1_decales_vec ; v_1_decales_vec ; z_1_decales_vec];
 		for k = 1:nb_images-1
-			P_2_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
-			P_2_voisinage_ok = cell2mat(mat2cell(P_2_voisinage,3,repmat(taille_patch,1,nb_pixels_etudies))');
-			i_2_voisinage(:,:,k) = P_2_voisinage_ok(2:3:end,:) * facteur_k + offset + v_0;
-			j_2_voisinage(:,:,k) = P_2_voisinage_ok(1:3:end,:) * facteur_k + offset + u_0;
+			for pixel = 1:nb_pixels_etudies
+				homographie = K * (R_1_k(:,:,k) - t_1_k(:,k) * normale(:,pixel)' / d_equation_plan(pixel)) * K_inv;
+				p_2_voisinage = homographie * z_a_regarder * [u_1_decales(pixel,:) ; v_1_decales(pixel,:) ; ones(1,taille_patch)];
+				u_2_voisinage = p_2_voisinage(1,:) ./ p_2_voisinage(3,:);
+				v_2_voisinage = p_2_voisinage(2,:) ./ p_2_voisinage(3,:);
+				i_2_voisinage(pixel,:,k) = v_2_voisinage + offset;
+				j_2_voisinage(pixel,:,k) = u_2_voisinage + offset;
+			end
 		end
 
 		% Vérification des pixels hors images

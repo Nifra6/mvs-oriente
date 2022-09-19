@@ -197,51 +197,17 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		numerateur_x = [];
 		numerateur_y = [];
 		denominateur = [];
+		coeff_z_1 = 1 / p_1(3,1);
+		deplacement_1 = [u_0 - u_k(:,1) , v_0 - v_k(:,1)];
 		grad_I_1 = [grad_I_x(1,:); grad_I_y(1,:)];
-		%P_monde = R(:,:,1)' * P_k(:,:,1) - R(:,:,1)' * t(:,1);
-		P_monde = P_k(:,:,1);
-		w_i1R = cross(repmat(R(:,1,1),1,nb_pixels_etudies),P_k(:,:,1));
-		w_i2R = cross(repmat(R(:,2,1),1,nb_pixels_etudies),P_k(:,:,1));
-		w_i3R = cross(repmat(R(:,3,1),1,nb_pixels_etudies),P_k(:,:,1));
-		matrice_numerateur_R = zeros(2,2,nb_pixels_etudies);
-		matrice_numerateur_R(1,1,:) = w_i1R(2,:);
-		matrice_numerateur_R(1,2,:) = -w_i1R(1,:);
-		matrice_numerateur_R(2,1,:) = w_i2R(2,:);
-		matrice_numerateur_R(2,2,:) = -w_i2R(1,:);
 		for k = 1:nb_images-1
-			w_i1k = cross(repmat(R(:,1,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-			w_i2k = cross(repmat(R(:,2,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-			w_i3k = cross(repmat(R(:,3,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-
-			%w_i1k = cross(repmat(R_1_k(:,1,k),1,nb_pixels_etudies),P_k(:,:,k+1));
-			%w_i2k = cross(repmat(R_1_k(:,2,k),1,nb_pixels_etudies),P_k(:,:,k+1));
-			%w_i3k = cross(repmat(R_1_k(:,3,k),1,nb_pixels_etudies),P_k(:,:,k+1));
-			
+			coeff_z_k = 1 ./ P_k(3,:,k+1);
+			deplacement_k = [u_0 - u_k(:,k+1) , v_0 - v_k(:,k+1)];
 			grad_I_k = [grad_I_x(k+1,:); grad_I_y(k+1,:)];
-
-			matrice_numerateur = zeros(2,2,nb_pixels_etudies);
-			matrice_numerateur(1,1,:) = w_i1k(2,:);
-			matrice_numerateur(1,2,:) = -w_i1k(1,:);
-			matrice_numerateur(2,1,:) = w_i2k(2,:);
-			matrice_numerateur(2,2,:) = -w_i2k(1,:);
-
-
-			numerateur_uni = zeros(2,nb_pixels_etudies);
-			numerateur_bis = zeros(2,nb_pixels_etudies);
-			for pixel = 1:nb_pixels_etudies
-				numerateur_uni(:,pixel) = matrice_numerateur_R(:,:,pixel) * grad_I_1(:,pixel);
-				numerateur_bis(:,pixel) = matrice_numerateur(:,:,pixel) * grad_I_k(:,pixel);
-			end
-
-			%numerateur = (P_k(3,:,k+1).^2) .* P_monde(3,:) .* grad_I_1 + P_monde(3,:) .* numerateur_bis;
-			numerateur = - (P_k(3,:,k+1).^2) .* numerateur_uni + (P_monde(3,:).^2) .* numerateur_bis;
+			numerateur = f * coeff_z_1 * grad_I_1 - repmat(coeff_z_k,2,1) .* (f * R_1_k(1:2,1:2,k)' * grad_I_k + R_1_k(3,1:2)' * sum(deplacement_k'.*grad_I_k,1));
 			numerateur_x(k,:) = numerateur(1,:);
 			numerateur_y(k,:) = numerateur(2,:);			
-
-			%denominateur(k,:) = P_monde(3,:).^2 .* dot([-w_i3k(2,:) ; w_i3k(1,:)],grad_I_k) ...
-			%	+ P_k(3,:,k+1).^2 .* dot(P_monde(1:2,:),grad_I_1);
-			denominateur(k,:) = P_monde(3,:).^2 .* dot([-w_i3k(2,:) ; w_i3k(1,:)],grad_I_k) ...
-				+ P_k(3,:,k+1).^2 .* dot([-w_i3R(2,:) ; w_i3R(1,:)],grad_I_1);
+			denominateur(k,:) = coeff_z_1 * sum(deplacement_1'.*grad_I_1,1) + coeff_z_k .* (R_1_k(1:2,3,k)' * grad_I_k + R_1_k(3,3,k) * sum(deplacement_k'.*grad_I_k,1));
 		end
 		clear coeff_z_1 coeff_z_k grad_I_1 grad_I_k numerateur;
 
