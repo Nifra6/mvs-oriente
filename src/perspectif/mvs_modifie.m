@@ -1,7 +1,7 @@
 % Reconstruire une surface via l'algorithme de Multi-View Stereo modifié (ou MVSm).
 % Utilisé par lancement_test.m
 
-function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,utilisation_normales_medianes,grille_pixels)
+function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nb_vues,rayon_voisinage,sigma_filtre_I,sigma_filtre_grad,nb_z,z_precedent,espace_z,utilisation_profondeurs_GT,utilisation_normale_GT,grille_pixels)
 
 	%% Paramètres
 	interpolation 	= 'linear';			% Type d'interpolation utilisée
@@ -11,8 +11,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 
 	%% Données
-		% Chargement des fonctions utiles
-		addpath(genpath("../toolbox/"));
+	% Chargement des fonctions utiles
+	addpath(genpath("../toolbox/"));
 	% Chargement des données
 	path = "../../data/perspectif/";
 	nom_fichier = "simulateur_" + surface + "_formate.mat";
@@ -131,7 +131,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	grille_voisinage = voisinage_ligne + voisinage_colonne';
 	grille_voisinage = grille_voisinage';
 
-	%% Mise en forme des normales
+	%% Mise en forme des normales théoriques
 	normale_theorique = [N_VT(ind_1)' ; N_VT(ind_1 + nb_pixels)' ; N_VT(ind_1 + 2*nb_pixels)'];
 
 	%% Boucle de reconstruction
@@ -169,13 +169,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			v_k(:,k+1) = p_k(2,:)';
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
-			%if k == 2
-			%	[i_k(1303,1) , j_k(1303,1)]
-			%	P_k(:,1303,1)
-			%	P_k(:,1303,3)
-			%	p_k(:,1303)
-			%	[i_k(1303,3) , j_k(1303,3)]
-			%end
 		end
 
 
@@ -208,7 +201,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			w_i1k = cross(repmat(R_1_k(:,1,k),1,nb_pixels_etudies),P_k(:,:,k+1));
 			w_i2k = cross(repmat(R_1_k(:,2,k),1,nb_pixels_etudies),P_k(:,:,k+1));
 			w_i3k = cross(repmat(R_1_k(:,3,k),1,nb_pixels_etudies),P_k(:,:,k+1));
-			
+
 			grad_I_k = [grad_I_x(k+1,:); grad_I_y(k+1,:)];
 
 			matrice_numerateur = zeros(2,2,nb_pixels_etudies);
@@ -233,25 +226,9 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		clear coeff_z_1 coeff_z_k grad_I_1 grad_I_k numerateur;
 
 		% Estimation de la normale
-		if (utilisation_normales_medianes)
-			p_truc = numerateur_x ./ denominateur;
-			q_truc = numerateur_y ./ denominateur;
-			normale = normales_medianes(p_truc,q_truc);
-		else
-			% Calcul des coefficients p et q
-			p_q = 0;
-			for k = 1:nb_images-1
-				p_q = p_q + denominateur(k,:) .* [numerateur_x(k,:); numerateur_y(k,:)];
-			end
-			p_q 	= p_q ./ sum(denominateur.^2, 1);
-			p_estim = p_q(1, :);
-			q_estim = p_q(2, :);
-			clear p_q denominateur numerateur_x numerateur_y;
-
-			% Calcul de la normale
-			normale = [p_estim ; q_estim ; -ones(1,nb_pixels_etudies)] ...
-				./ sqrt(p_estim.^2 + q_estim.^2 + ones(1,nb_pixels_etudies));
-		end
+		p_truc = numerateur_x ./ denominateur;
+		q_truc = numerateur_y ./ denominateur;
+		normale = normales_medianes(p_truc,q_truc);
 
 		if (utilisation_normale_GT)
 			normale = normale_theorique;
@@ -259,7 +236,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		n_estimes(:,:,indice_z) = normale;
 
 		% Calcul du plan considéré
-		d_equation_plan = sum(-P_k(:,:,1) .* normale,1); % Euh ... c'est faux en perspectif, nan ?
+		d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
 
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
@@ -282,12 +259,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 				i_k_voisinage(pixel,:,k) = v_k_voisinage + offset;
 				j_k_voisinage(pixel,:,k) = u_k_voisinage + offset;
-				%if k == 2 & pixel == 1303
-				%	Z(1,1303)
-				%	d_equation_plan(1303)
-				%	p_k_voisinage
-				%	[i_k_voisinage(1303,:,2) ; j_k_voisinage(1303,:,2)]
-				%end
 			end
 		end
 
@@ -343,6 +314,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	% Affichage des erreurs angulaires
 	erreur_angle_moy = mean(angles_ind(:));
 	erreur_angle_med = median(angles_ind(:));
+
+	% Sauvegarde de la zone de recherche
 	if (utilisation_profondeurs_GT)
 		espace_z_suivant = 0;
 	else

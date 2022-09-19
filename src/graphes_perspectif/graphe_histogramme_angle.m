@@ -13,19 +13,18 @@ addpath(genpath('../toolbox/'));
 valeur_bruitage = 4;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
 surface = "gaussienne_decentree";
-%surface = "calotte";
+surface = "calotte_calotte";
 nombre_vues = 9;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 1000;
-utilisation_profondeur_GT = 1;
-utilisation_normale_GT = 0;
+nombre_profondeur_iteration = 100;
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 grille_pixel = 5;
 mesure = "median";
 mesure = "all";
-utilisation_mediane_normale = 1;
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
@@ -40,11 +39,6 @@ if (utilisation_normale_GT)
 	ecart_type_grad = 0;
 else
 	fichier_normale_GT = "";
-end
-if (utilisation_mediane_normale)
-	fichier_mediane = "__normales_medianes";
-else
-	fichier_mediane = "";
 end
 
 if (ecart_type_grad >= 0 & filtrage)
@@ -62,7 +56,7 @@ end
 nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
 	+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
 	+ int2str(nombre_profondeur_iteration) + fichier_bruite + fichier_profondeur_GT ...
-	+ fichier_normale_GT + fichier_mediane + ".mat";
+	+ fichier_normale_GT + ".mat";
 path = "../../result/tests/perspectif/";
 load(path+nom_fichier);
 grille_pixel = grille_pixels;
@@ -117,9 +111,6 @@ if (utilisation_profondeur_GT)
 end
 if (utilisation_normale_GT)
 	complement_titre = complement_titre + ", normales VT";
-end
-if (utilisation_mediane_normale)
-	complement_titre = complement_titre + ", normales médianes";
 end
 
 

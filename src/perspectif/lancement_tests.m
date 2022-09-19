@@ -12,17 +12,8 @@ H = taille_ecran(4);
 
 %% Paramètres
 valeur_bruitage = 8;
-liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage), "gaussienne_1_pepper_bruitee_" ...
-	+ int2str(valeur_bruitage), "gaussienne_2_bruitee_" + int2str(valeur_bruitage), "sinc_1_bruitee_" ...
-	+ int2str(valeur_bruitage)];
-liste_surface = ["gaussienne_1_pepper_bruitee_" ...
-	+ int2str(valeur_bruitage), "gaussienne_2_bruitee_" + int2str(valeur_bruitage), "sinc_1_bruitee_" ...
-	+ int2str(valeur_bruitage)];
-%liste_surface = ["gaussienne_1_bruitee_" + int2str(valeur_bruitage)];
-liste_surface = ["gaussienne_1", "gaussienne_1_pepper", "gaussienne_2", "sinc_1"];
-%liste_surface = ["gaussienne_1_bis", "gaussienne_1_pepper_bis", "gaussienne_2_bis", "sinc_1_bis"];
 liste_surface = ["gaussienne_decentree"];
-%liste_surface = ["calotte"];
+liste_surface = ["calotte_calotte"];
 liste_rayon_voisinage = [4];
 nombre_iteration = 1;
 %liste_ecart_type_I = [0:0.5:3];
@@ -30,12 +21,11 @@ liste_ecart_type_I = -1;
 %liste_ecart_type_grad = [0:10];
 liste_ecart_type_grad = 0;
 filtrage = 0;
-grille_pixels = 5;
+grille_pixels = 2;
 liste_nombre_vues = [2, 9];
-liste_nombre_profondeur_iteration = [1000];
-utilisation_profondeur_GT = 1;
-utilisation_normale_GT = 0;
-utilisation_mediane_normale = 1;
+liste_nombre_profondeur_iteration = [100];
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 
 %% Variables
 nb_surface = size(liste_surface,2);
@@ -85,11 +75,6 @@ if (utilisation_normale_GT)
 	nb_ecart_type_grad = 1;
 else
 	fichier_normale_GT = "";
-end
-if (utilisation_mediane_normale)
-	fichier_mediane = "__normales_medianes";
-else
-	fichier_mediane = "";
 end
 
 
@@ -149,14 +134,13 @@ for i_ecart_type_I = 1:nb_ecart_type_I
 							disp("MVS :");
 							[z_estime_mvs,erreur_z_mvs,angles_mvs,normales_mvs] = mvs(premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,nombre_z,z_estime_mvs,espace_z,utilisation_profondeur_GT,grille_pixels);
 							disp("MVS modifié :");
-							[z_estime_mvsm,erreur_z_mvsm,espace_z,normales_mvsm,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvsm,espace_z,utilisation_profondeur_GT,utilisation_normale_GT,utilisation_mediane_normale,grille_pixels);
+							[z_estime_mvsm,erreur_z_mvsm,espace_z,normales_mvsm,erreur_angle_moy,erreur_angle_med] = mvs_modifie(premiere_iteration,surface,nombre_vues,rayon_voisinage,ecart_type_I,ecart_type_grad,nombre_z,z_estime_mvsm,espace_z,utilisation_profondeur_GT,utilisation_normale_GT,grille_pixels);
 						end
 						% Sauvegarde des résultats
 						nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) ...
 							+ "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
 							+ "__nb_profondeur_" + int2str(nombre_profondeur_iteration) ...
-							+ fichier_bruite + fichier_profondeur_GT + fichier_normale_GT ...
-							+ fichier_mediane + ".mat";
+							+ fichier_bruite + fichier_profondeur_GT + fichier_normale_GT + ".mat";
 						path = "../../result/tests/perspectif/";
 						save(path+nom_fichier,"surface","nombre_vues","taille_patch","nombre_profondeur_iteration","z_estime_mvs","z_estime_mvsm","erreur_z_mvs","erreur_z_mvsm","normales_mvs","normales_mvsm","erreur_angle_moy","erreur_angle_med","grille_pixels");
 						disp("Enregistrement sous : " + nom_fichier);

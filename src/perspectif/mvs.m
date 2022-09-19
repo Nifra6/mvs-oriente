@@ -127,12 +127,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			v_k(:,k+1) = p_k(2,:)';
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
-			%if k == 2   % Debug
-			%[i_k(1303,1) , j_k(1303,1)]
-			%P_k(:,1303,1)
-			%P_k(:,1303,3)
-			%[i_k(1303,3) , j_k(1303,3)]
-			%end
 		end
 
 
@@ -142,31 +136,36 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			condition_image(:,k) = i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nb_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nb_colonnes;
 		end
 
-		n_estimes(:,:,indice_z) = zeros(3,nb_pixels_etudies);
-		n_estimes(3,:,indice_z) = -1;
+		% Les normales fronto-parallèles
+		normale = zeros(3,nb_pixels_etudies);
+		normale(3,:) = -1;
+		n_estimes(:,:,indice_z) = normale;
+
+		% Calcul du plan considéré
+		d_equation_plan = sum(-P_k(:,:,1) .* normale,1);
 
 		% Calcul de la transformation géométrique
 		ind_decales = ind_1 + grille_voisinage(:)'; % Création de matrice avec 2 vecteurs
 		[i_1_decales, j_1_decales] = ind2sub([nb_lignes, nb_colonnes], ind_decales);
 		u_1_decales = j_1_decales - offset;
 		v_1_decales = i_1_decales - offset;
-		z_1_decales = repmat(valeur_z,1,size(u_1_decales,2));
 
 		% Reprojection du voisinage
 		i_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		j_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
-		z_1_decales_vec = reshape(z_1_decales',1,nb_pixels_etudies*taille_patch);
-		P_1_voisinage = z_1_decales_vec .* (K_inv * [u_1_decales_vec ; v_1_decales_vec ; ones(size(u_1_decales_vec))]);
 		for k = 1:nb_images-1
-			P_k_voisinage = R_1_k(:,:,k) * P_1_voisinage + t_1_k(:,k);
-			p_k_voisinage = (K * P_k_voisinage) ./ P_k_voisinage(3,:);
-			P_k_voisinage_ok = cell2mat(mat2cell(p_k_voisinage,3,repmat(taille_patch,1,nb_pixels_etudies))');
-			u_k_voisinage = P_k_voisinage_ok(1:3:end,:);
-			v_k_voisinage = P_k_voisinage_ok(2:3:end,:);
-			i_k_voisinage(:,:,k) = v_k_voisinage + offset;
-			j_k_voisinage(:,:,k) = u_k_voisinage + offset;
+			for pixel = 1:nb_pixels_etudies
+
+				homographie = K * (R_1_k(:,:,k) - t_1_k(:,k) * normale(:,pixel)' / d_equation_plan(pixel)) * K_inv;	
+				p_k_voisinage = homographie * Z(1,pixel) * [u_1_decales(pixel,:) ; v_1_decales(pixel,:) ; ones(1,taille_patch)];
+				u_k_voisinage = p_k_voisinage(1,:) ./ p_k_voisinage(3,:);
+				v_k_voisinage = p_k_voisinage(2,:) ./ p_k_voisinage(3,:);
+
+				i_k_voisinage(pixel,:,k) = v_k_voisinage + offset;
+				j_k_voisinage(pixel,:,k) = u_k_voisinage + offset;
+			end
 		end
 
 		% Calcul de l'erreur
