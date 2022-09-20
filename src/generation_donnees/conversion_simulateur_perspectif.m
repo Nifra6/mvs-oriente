@@ -4,8 +4,8 @@
 % analyser les résultats avec la vérité terrain.
 
 %% Paramètres
-filtrage_points	= 0;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
-masque_calotte	= 1;
+filtrage_points	= 1;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
+masque_calotte	= 0;
 
 %% Chargement des données
 load ../../data/perspectif/simulateur.mat;
@@ -72,7 +72,7 @@ N(:,:,:,indice_image_reference+1:end) = N_to_sort(:,:,:,indice_image_reference+1
 
 %% Optionel - Retirer les points masqués dans certaines images
 if (filtrage_points)
-	grille_pixels = 5;
+	grille_pixels = 2;
 	rayon_voisinage = 15;
 	offset = 0.5;
 	taille_patch = (2 * rayon_voisinage + 1)^2;

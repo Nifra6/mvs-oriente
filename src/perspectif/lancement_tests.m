@@ -12,8 +12,8 @@ H = taille_ecran(4);
 
 %% Paramètres
 valeur_bruitage = 8;
-liste_surface = ["gaussienne_decentree"];
-liste_surface = ["calotte_calotte"];
+liste_surface = ["calotte", "calotte_peppers", "calotte_calotte", "gaussienne_decentree"];
+%liste_surface = ["calotte_calotte"];
 liste_rayon_voisinage = [4];
 nombre_iteration = 1;
 %liste_ecart_type_I = [0:0.5:3];
@@ -21,11 +21,11 @@ liste_ecart_type_I = -1;
 %liste_ecart_type_grad = [0:10];
 liste_ecart_type_grad = 0;
 filtrage = 0;
-grille_pixels = 2;
-liste_nombre_vues = [2, 9];
-liste_nombre_profondeur_iteration = [100];
+grille_pixels = 4;
+liste_nombre_vues = [9];
+liste_nombre_profondeur_iteration = [1000];
 utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+utilisation_normale_GT = 0;
 
 %% Variables
 nb_surface = size(liste_surface,2);
@@ -43,10 +43,10 @@ end
 if (nb_nombre_vues == 1)
 	disp("Nombre de vues utilisées : " + int2str(liste_nombre_vues(1)));
 end
-if (nb_ecart_type_grad == 1)
+if (filtrage && nb_ecart_type_grad == 1)
 	disp("Écart type pour les gradients utilisé : " + num2str(liste_ecart_type_grad(1)));
 end
-if (nb_ecart_type_I == 1)
+if (filtrage && nb_ecart_type_I == 1)
 	disp("Écart type pour la cohérence photométrique utilisé : " + num2str(liste_ecart_type_I(1)));
 end
 
@@ -81,12 +81,12 @@ end
 %% Algorithme
 for i_ecart_type_I = 1:nb_ecart_type_I
 	ecart_type_I = liste_ecart_type_I(i_ecart_type_I);
-	if (nb_ecart_type_I > 1)
+	if (filtrage && nb_ecart_type_I > 1)
 		disp("-------------------- Écart type pour la cohérence photométrique utilisé : " + ecart_type_I);
 	end
 	for i_ecart_type_grad = 1:nb_ecart_type_grad
 		ecart_type_grad = liste_ecart_type_grad(i_ecart_type_grad);
-		if (nb_ecart_type_grad > 1)
+		if (filtrage && nb_ecart_type_grad > 1)
 			disp("----------------- Écart type pour les gradients utilisé : " + ecart_type_grad);
 		end
 		if (ecart_type_grad >= 0 && filtrage)
@@ -113,6 +113,11 @@ for i_ecart_type_I = 1:nb_ecart_type_I
 					end
 					for i_nombre_profondeur = 1:nb_nombre_profondeur
 						nombre_profondeur_iteration = liste_nombre_profondeur_iteration(i_nombre_profondeur);
+						if (utilisation_profondeur_GT)
+							fichier_profondeur = "";
+						else
+							fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
+						end
 						if (nb_nombre_profondeur > 1)
 							disp("----- Nombre de profondeurs testées : " + int2str(nombre_profondeur_iteration));
 						end
@@ -139,8 +144,8 @@ for i_ecart_type_I = 1:nb_ecart_type_I
 						% Sauvegarde des résultats
 						nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) ...
 							+ "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
-							+ "__nb_profondeur_" + int2str(nombre_profondeur_iteration) ...
-							+ fichier_bruite + fichier_profondeur_GT + fichier_normale_GT + ".mat";
+							+  fichier_profondeur + fichier_bruite + fichier_profondeur_GT ...
+							+ fichier_normale_GT + ".mat";
 						path = "../../result/tests/perspectif/";
 						save(path+nom_fichier,"surface","nombre_vues","taille_patch","nombre_profondeur_iteration","z_estime_mvs","z_estime_mvsm","erreur_z_mvs","erreur_z_mvsm","normales_mvs","normales_mvsm","erreur_angle_moy","erreur_angle_med","grille_pixels");
 						disp("Enregistrement sous : " + nom_fichier);

@@ -191,13 +191,8 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		numerateur_y = [];
 		denominateur = [];
 		grad_I_1 = [grad_I_x(1,:); grad_I_y(1,:)];
-		%P_monde = R(:,:,1)' * P_k(:,:,1) - R(:,:,1)' * t(:,1);
 		P_monde = P_k(:,:,1);
 		for k = 1:nb_images-1
-			%w_i1k = cross(repmat(R(:,1,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-			%w_i2k = cross(repmat(R(:,2,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-			%w_i3k = cross(repmat(R(:,3,k+1),1,nb_pixels_etudies),P_k(:,:,k+1));
-
 			w_i1k = cross(repmat(R_1_k(:,1,k),1,nb_pixels_etudies),P_k(:,:,k+1));
 			w_i2k = cross(repmat(R_1_k(:,2,k),1,nb_pixels_etudies),P_k(:,:,k+1));
 			w_i3k = cross(repmat(R_1_k(:,3,k),1,nb_pixels_etudies),P_k(:,:,k+1));
@@ -210,11 +205,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 			matrice_numerateur(2,1,:) = w_i2k(2,:);
 			matrice_numerateur(2,2,:) = -w_i2k(1,:);
 
-
-			numerateur_bis = zeros(2,nb_pixels_etudies);
-			for pixel = 1:nb_pixels_etudies
-				numerateur_bis(:,pixel) = matrice_numerateur(:,:,pixel) * grad_I_k(:,pixel);
-			end
+			numerateur_bis = reshape(pagemtimes(matrice_numerateur,reshape(grad_I_k,2,1,nb_pixels_etudies)),2,nb_pixels_etudies);
 
 			numerateur = (P_k(3,:,k+1).^2) .* P_monde(3,:) .* grad_I_1 + (P_monde(3,:).^2) .* numerateur_bis;
 			numerateur_x(k,:) = numerateur(1,:);
@@ -245,21 +236,34 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		v_1_decales = i_1_decales - offset;
 
 		% Reprojection du voisinage
+		%{
 		i_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		j_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
 		for k = 1:nb_images-1
 			for pixel = 1:nb_pixels_etudies
-
 				homographie = K * (R_1_k(:,:,k) - t_1_k(:,k) * normale(:,pixel)' / d_equation_plan(pixel)) * K_inv;	
 				p_k_voisinage = homographie * Z(1,pixel) * [u_1_decales(pixel,:) ; v_1_decales(pixel,:) ; ones(1,taille_patch)];
 				u_k_voisinage = p_k_voisinage(1,:) ./ p_k_voisinage(3,:);
 				v_k_voisinage = p_k_voisinage(2,:) ./ p_k_voisinage(3,:);
-
 				i_k_voisinage(pixel,:,k) = v_k_voisinage + offset;
 				j_k_voisinage(pixel,:,k) = u_k_voisinage + offset;
 			end
+		end
+		%}
+		i_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
+		j_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
+		u_1_decales_vec = reshape(u_1_decales',1,taille_patch,nb_pixels_etudies);
+		v_1_decales_vec = reshape(v_1_decales',1,taille_patch,nb_pixels_etudies);
+		p_1_vec = [u_1_decales_vec ; v_1_decales_vec ; ones(1,taille_patch,nb_pixels_etudies)];
+		for k = 1:nb_images-1
+			homographie_totale = pagemtimes(K,pagemtimes(R_1_k(:,:,k) - pagemtimes(t_1_k(:,k),reshape((normale./d_equation_plan),1,3,nb_pixels_etudies)),K_inv));
+			p_k_voisinage = pagemtimes(homographie_totale, pagemtimes(reshape(Z(1,:),1,1,nb_pixels_etudies), p_1_vec));
+			u_k_voisinage = permute(p_k_voisinage(1,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
+			v_k_voisinage = permute(p_k_voisinage(2,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
+			i_k_voisinage(:,:,k) = v_k_voisinage + offset;
+			j_k_voisinage(:,:,k) = u_k_voisinage + offset;
 		end
 
 		% Calcul de l'erreur

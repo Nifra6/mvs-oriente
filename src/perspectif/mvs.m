@@ -111,6 +111,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		end
 
 		% Sélection d'une profondeur
+		%tic
 		valeur_z 	= z_grossiers_estimes + valeurs_z(indice_z);
 		if (utilisation_profondeurs_GT)
 			Z = repmat(Z_VT(ind_1)',3,1);
@@ -118,8 +119,10 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			Z = repmat(valeur_z',3,1);
 		end
 		P_k(:,:,1) = Z .* (K_inv * p_1);
+		%toc
 
 		% Changements de repère
+		%tic
 		for k = 1:nb_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
 			p_k = (K * P_k(:,:,k+1)) ./ P_k(3,:,k+1);
@@ -128,13 +131,15 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			i_k(:,k+1) = v_k(:,k+1) + offset;
 			j_k(:,k+1) = u_k(:,k+1) + offset;
 		end
-
+		%toc
 
 		% Vérification des pixels hors images
+		%tic
 		condition_image = ones(nb_pixels_etudies,nb_images-1);
 		for k = 1:nb_images-1
 			condition_image(:,k) = i_k(:,k+1) > 0.5 & i_k(:,k+1) <= nb_lignes & j_k(:,k+1) > 0.5 & j_k(:,k+1) <= nb_colonnes;
 		end
+		%toc
 
 		% Les normales fronto-parallèles
 		normale = zeros(3,nb_pixels_etudies);
@@ -151,24 +156,38 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		v_1_decales = i_1_decales - offset;
 
 		% Reprojection du voisinage
+		%{
 		i_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		j_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
 		u_1_decales_vec = reshape(u_1_decales',1,nb_pixels_etudies*taille_patch);
 		v_1_decales_vec = reshape(v_1_decales',1,nb_pixels_etudies*taille_patch);
 		for k = 1:nb_images-1
 			for pixel = 1:nb_pixels_etudies
-
 				homographie = K * (R_1_k(:,:,k) - t_1_k(:,k) * normale(:,pixel)' / d_equation_plan(pixel)) * K_inv;	
 				p_k_voisinage = homographie * Z(1,pixel) * [u_1_decales(pixel,:) ; v_1_decales(pixel,:) ; ones(1,taille_patch)];
 				u_k_voisinage = p_k_voisinage(1,:) ./ p_k_voisinage(3,:);
 				v_k_voisinage = p_k_voisinage(2,:) ./ p_k_voisinage(3,:);
-
 				i_k_voisinage(pixel,:,k) = v_k_voisinage + offset;
 				j_k_voisinage(pixel,:,k) = u_k_voisinage + offset;
 			end
 		end
+		%}
+		i_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
+		j_k_voisinage = zeros(nb_pixels_etudies, taille_patch, nb_images-1);
+		u_1_decales_vec = reshape(u_1_decales',1,taille_patch,nb_pixels_etudies);
+		v_1_decales_vec = reshape(v_1_decales',1,taille_patch,nb_pixels_etudies);
+		p_1_vec = [u_1_decales_vec ; v_1_decales_vec ; ones(1,taille_patch,nb_pixels_etudies)];
+		for k = 1:nb_images-1
+			homographie_totale = pagemtimes(K,pagemtimes(R_1_k(:,:,k) - pagemtimes(t_1_k(:,k),reshape((normale./d_equation_plan),1,3,nb_pixels_etudies)),K_inv));
+			p_k_voisinage = pagemtimes(homographie_totale, pagemtimes(reshape(Z(1,:),1,1,nb_pixels_etudies), p_1_vec));
+			u_k_voisinage = permute(p_k_voisinage(1,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
+			v_k_voisinage = permute(p_k_voisinage(2,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
+			i_k_voisinage(:,:,k) = v_k_voisinage + offset;
+			j_k_voisinage(:,:,k) = u_k_voisinage + offset;
+		end
 
 		% Calcul de l'erreur
+		%tic
 		I_1_voisinage = interp2(I_filtre(:,:,1),j_1_decales,i_1_decales,interpolation);
 		erreur_k = zeros(nb_pixels_etudies, nb_images-1);
 		for k = 1:nb_images-1
@@ -181,6 +200,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			case 'Robuste'
 				erreurs(:,indice_z) = (1 ./ sum(condition_image,2)) .* (1 - exp(-sum(erreur_k.^2,2)/0.2^2));
 		end
+		%toc
 
 	end
 

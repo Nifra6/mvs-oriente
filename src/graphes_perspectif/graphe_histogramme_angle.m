@@ -13,16 +13,15 @@ addpath(genpath('../toolbox/'));
 valeur_bruitage = 4;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
 surface = "gaussienne_decentree";
-surface = "calotte_calotte";
+%surface = "calotte_calotte";
 nombre_vues = 9;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 100;
+nombre_profondeur_iteration = 1000;
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 1;
-grille_pixel = 5;
 mesure = "median";
 mesure = "all";
 
@@ -30,9 +29,11 @@ mesure = "all";
 taille_patch = 2*rayon_voisinage + 1;
 if (utilisation_profondeur_GT)
 	fichier_profondeur_GT = "__profondeurs_GT";
+	fichier_profondeur = "";
 	ecart_type_I = 0;
 else
 	fichier_profondeur_GT = "";
+	fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
 end
 if (utilisation_normale_GT)
 	fichier_normale_GT = "__normales_GT";
@@ -54,9 +55,8 @@ end
 
 
 nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
-	+ int2str(taille_patch) + "x" + int2str(taille_patch) + "__nb_profondeur_" ...
-	+ int2str(nombre_profondeur_iteration) + fichier_bruite + fichier_profondeur_GT ...
-	+ fichier_normale_GT + ".mat";
+	+ int2str(taille_patch) + "x" + int2str(taille_patch) + fichier_profondeur ...
+	+ fichier_bruite + fichier_profondeur_GT + fichier_normale_GT + ".mat";
 path = "../../result/tests/perspectif/";
 load(path+nom_fichier);
 grille_pixel = grille_pixels;
@@ -225,7 +225,7 @@ Z = z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end);
 R_inv = R(:,:,1)'
 t_inv = - R_inv * t(:,1);
 p = repmat(Z(:)',3,1) .* (inv(K) * [X_o(:)' ; Y_o(:)' ; ones(1,nb_c*nb_l)]);
-P = R_inv * p  + t_inv;
+P = R_inv * p + t_inv;
 X = P(1,:);
 Y = P(2,:);
 Z = P(3,:);
