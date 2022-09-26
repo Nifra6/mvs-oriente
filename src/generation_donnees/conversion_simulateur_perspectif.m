@@ -19,10 +19,9 @@ K = params.K;
 u_0 = K(1,3);
 v_0 = K(2,3);
 f = K(1,1);
-facteur_k = params.orthoScale;
 
 % Image de référence
-indice_image_reference = 5;
+indice_image_reference = 6;
 
 % L'éclairage
 s = params.lightIntensity * params.lightSource;
@@ -154,4 +153,4 @@ end
 
 
 %% Sauvegardes des données exploitables
-save('../../data/perspectif/simulateur_formate.mat','nb_images', 'nb_lignes', 'nb_colonnes', 'indice_image_reference', 's', 'K', 'u_0', 'v_0', 'f', 'facteur_k', 'I', 'masque', 'R', 't', 'z', 'N');
+save('../../data/perspectif/simulateur_formate.mat','nb_images', 'nb_lignes', 'nb_colonnes', 'indice_image_reference', 's', 'K', 'u_0', 'v_0', 'f', 'I', 'masque', 'R', 't', 'z', 'N');

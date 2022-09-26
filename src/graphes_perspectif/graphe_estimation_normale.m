@@ -11,10 +11,10 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 4;
-surface = "gaussienne_decentree";
-surface = "calotte_calotte_persp";
-%surface = "reel_mur";
-surface = "plan_peppers_11flou_16bit";
+surface = "gaussienne_decentree_cote";
+%surface = "plan_peppers_11flou_16bit";
+%surface = "calotte"
+%surface = "sinus";
 nombre_vues = 9;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
@@ -28,20 +28,10 @@ mesure = "all";
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
-if (utilisation_profondeur_GT)
-	fichier_profondeur_GT = "__profondeurs_GT";
-	fichier_profondeur = "";
-	ecart_type_I = 0;
-else
-	fichier_profondeur_GT = "";
-	fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
-end
-if (utilisation_normale_GT)
-	fichier_normale_GT = "__normales_GT";
-	ecart_type_grad = 0;
-else
-	fichier_normale_GT = "";
-end
+fichier_profondeur_GT = "__profondeurs_GT";
+fichier_profondeur = "";
+ecart_type_I = 0;
+fichier_normale_GT = "";
 
 if (ecart_type_grad >= 0 & filtrage)
 	if (ecart_type_I >= 0)
@@ -111,12 +101,7 @@ if (ecart_type_grad >= 0 & filtrage)
 else
 	complement_titre = complement_titre + ", sans filtrage";
 end
-if (utilisation_profondeur_GT)
-	complement_titre = complement_titre + ", profondeurs VT";
-end
-if (utilisation_normale_GT)
-	complement_titre = complement_titre + ", normales VT";
-end
+complement_titre = complement_titre + ", profondeurs VT";
 
 
 %% Analyse des résultats
@@ -150,30 +135,6 @@ for k = 1:nombre_zones
 end
 
 %% Affichage
-% Histogramme
-if (~utilisation_profondeur_GT)
-	figure
-	if (mesure == "median")
-		b = bar(label_zones,[erreurs_mvs_med ; erreurs_mvsm_med]);
-		legend('MVS','MVS modifié','Location','best')
-		xlabel('Angles des normales avec la direction de la caméra de référence')
-		ylabel('Erreurs de profondeurs médianes')
-	else
-		b = bar(label_zones,[erreurs_mvs_moy ; erreurs_mvsm_moy ; erreurs_mvs_med ; erreurs_mvsm_med]);
-		legend('Moyenne MVS','Moyenne MVS modifié','Médiane MVS','Médiane MVS modifié','Location','best')
-		xlabel('Angles des normales avec la direction de la caméra de référence')
-		ylabel('Erreurs de profondeurs')
-	end
-	%title(["Erreurs sur la surface " + surface ; "avec " + int2str(nombre_profondeur_iteration) + " échantillons" + complement_titre],'interpreter','none');
-
-	% Affichage des nombres
-	xtips1 = b(1).XEndPoints;
-	ytips1 = b(1).YEndPoints;
-	labels1 = string(nombre_points_zones);
-	text(xtips1,ytips1,labels1,'HorizontalAlignment','center',...
-		'VerticalAlignment','bottom')
-end
-
 % Préparation de la reconstruction
 Z = z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
 [nb_l,nb_c] = size(X_o);
@@ -191,7 +152,6 @@ Z = reshape(Z,nb_l,nb_c);
 
 % Affichage de la reconstruction
 figure('Name','Relief MVS','Position',[0,0,0.33*L,0.5*H]);
-subplot(2,1,1);
 sl = surf(X,Y,Z,color_map_value_GT);
 sl.EdgeColor = 'none';
 sl.CDataMapping = 'scaled';
@@ -200,85 +160,13 @@ ax.CLim = [0 5];
 grid off;
 colormap 'jet';
 axis equal;
-%title("Relief MVS",'interpreter','none');
 title("Orientation des normales",'interpreter','none');
 colorbar;
 view([-90 90])
 
-if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
-	s = surf(X,Y,-z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvs);
-	s.EdgeColor = 'none';
-	s.CDataMapping = 'scaled';
-	ax = gca;
-	ax.CLim = [min_c_map max_c_map];
-	grid off;
-	colormap jet;
-	c = colorbar;
-	c.Label.String = 'Erreur de profondeurs (en m)';
-	c.Label.FontSize = 11;
-	c.Location = "east";
-	c.AxisLocation = "out";
-	axis equal;
-	title("Reconstruction MVS" + complement_titre,'interpreter','none');
-	view([-90 90]);
-end
-
-% Préparation de la reconstruction
-Z = z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end);
-[nb_l,nb_c] = size(X_o);
-R_inv = R(:,:,1)'
-t_inv = - R_inv * t(:,1);
-p = repmat(Z(:)',3,1) .* (inv(K) * [X_o(:)' ; Y_o(:)' ; ones(1,nb_c*nb_l)]);
-P = R_inv * p + t_inv;
-X = P(1,:);
-Y = P(2,:);
-Z = P(3,:);
-X = reshape(X,nb_l,nb_c);
-Y = reshape(Y,nb_l,nb_c);
-Z = reshape(Z,nb_l,nb_c);
-
-
-% Affichage de la reconstruction
-figure('Name','Relief MVS modifié','Position',[0,0,0.33*L,0.5*H]);
-subplot(2,1,1);
-sl = surf(X,Y,Z,color_map_value_GT);
-sl.EdgeColor = 'none';
-sl.CDataMapping = 'scaled';
-ax = gca;
-ax.CLim = [0 5];
-grid off;
-colormap 'jet';
-axis equal;
-title("Relief MVS modifié",'interpreter','none');
-%view([-90 90]);
-
-if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
-	s = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvsm);
-	s.EdgeColor = 'none';
-	s.CDataMapping = 'scaled';
-	ax = gca;
-	ax.CLim = [min_c_map max_c_map];
-	grid off;
-	colormap jet;
-	c = colorbar;
-	c.Label.String = 'Erreur de profondeurs (en m)';
-	c.Label.FontSize = 11;
-	c.Location = "east";
-	c.AxisLocation = "out";
-	axis equal;
-	title("Reconstruction MVSm" + complement_titre,'interpreter','none');
-	view([-90 90]);
-end
-
-
 diff_erreurs = erreurs_mvs_med - erreurs_mvsm_med
 pourcentages_diff_erreurs = 100 * (erreurs_mvs_med - erreurs_mvsm_med) ./ erreurs_mvs_med
 nombre_points_zones
-
-
-
 
 % Affichage de la reconstruction
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);

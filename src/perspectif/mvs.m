@@ -17,12 +17,14 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	path = "../../data/perspectif/";
 	nom_fichier = "simulateur_" + surface + "_formate.mat";
 	load(path+nom_fichier);
+	clear N;
 	% Nombres d'images et de pixels considérés
 	nb_pixels = nb_lignes * nb_colonnes;
 	nb_images = nb_vues;
 	taille_patch  = (2*rayon_voisinage + 1)^2;		% Nombre de pixels dans un patch
 	% Les profondeurs
 	Z_VT = z(:,:,1);
+	clear z;
 	if (premiere_iteration)
 		if (surface == "plan_bis")
 			valeurs_z = linspace(4,6,nb_z);
@@ -52,6 +54,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	% Filtrage des pixels considérés par le masque
 	[i_k, j_k]  = find(masque(:,:,1));
 	ind_1		= sub2ind([nb_lignes nb_colonnes], i_k, j_k);
+	clear masque;
 	% Utilisation d'une grille régulière de pixels
 	if (grille_pixels > 0)
 		indices_grilles = (mod(i_k,grille_pixels) == 1) & (mod(j_k,grille_pixels) == 1);
@@ -85,6 +88,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 	else
 		I_filtre = I;
 	end
+	clear I;
 
 	%% Construction du voisinage
 	voisinage_ligne = -rayon_voisinage*nb_lignes:nb_lignes:rayon_voisinage*nb_lignes;
@@ -154,6 +158,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		[i_1_decales, j_1_decales] = ind2sub([nb_lignes, nb_colonnes], ind_decales);
 		u_1_decales = j_1_decales - offset;
 		v_1_decales = i_1_decales - offset;
+		clear ind_decales;
 
 		% Reprojection du voisinage
 		%{
@@ -177,6 +182,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		u_1_decales_vec = reshape(u_1_decales',1,taille_patch,nb_pixels_etudies);
 		v_1_decales_vec = reshape(v_1_decales',1,taille_patch,nb_pixels_etudies);
 		p_1_vec = [u_1_decales_vec ; v_1_decales_vec ; ones(1,taille_patch,nb_pixels_etudies)];
+		clear u_1_decales v_1_decales u_1_decales_vec v_1_decales_vec;
 		for k = 1:nb_images-1
 			homographie_totale = pagemtimes(K,pagemtimes(R_1_k(:,:,k) - pagemtimes(t_1_k(:,k),reshape((normale./d_equation_plan),1,3,nb_pixels_etudies)),K_inv));
 			p_k_voisinage = pagemtimes(homographie_totale, pagemtimes(reshape(Z(1,:),1,1,nb_pixels_etudies), p_1_vec));
@@ -185,6 +191,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 			i_k_voisinage(:,:,k) = v_k_voisinage + offset;
 			j_k_voisinage(:,:,k) = u_k_voisinage + offset;
 		end
+		clear u_k_voisinage v_k_voisinage d_equation_plan;
 
 		% Calcul de l'erreur
 		%tic

@@ -12,9 +12,9 @@ addpath(genpath('../toolbox/'));
 %% Paramètres
 valeur_bruitage = 8;
 surface = "gaussienne_1_bruitee_" + int2str(valeur_bruitage);
-surface = "gaussienne_decentree";
-surface = "plan_planche_11flou_16bit";
-surface = "calotte_sim_calotte";
+surface = "gaussienne_2";
+%surface = "plan_peppers_11flou_16bit";
+%surface = "calotte_sim_calotte";
 perspectif = 0;
 nombre_vues = 9;
 rayon_voisinage = 4;
