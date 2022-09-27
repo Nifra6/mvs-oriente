@@ -11,8 +11,9 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 4;
-surface = "gaussienne_decentree_cote";
-%surface = "plan_peppers_11flou_16bit";
+surface = "gaussienne_decentree_corrige";
+surface = "sinc";
+%surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
 nombre_vues = 9;
@@ -221,3 +222,34 @@ colorbar
 axis equal;
 title("Différence angulaire entre normales estimées et normales frontoparallèles",'interpreter','none');
 view([-90 90]);
+
+
+
+%{
+figure
+sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
+hold on
+title("normale estimee")
+axis equal;
+[nb_l,nb_c] = size(masque_1_shrink);
+map_normale = zeros(nb_l,nb_c,3);
+map_normale(ind_1_shrink) = normales_mvsm(1,:)';
+map_normale(ind_1_shrink + nb_l*nb_c) = normales_mvsm(2,:)';
+map_normale(ind_1_shrink + 2*nb_l*nb_c) = normales_mvsm(3,:)';
+quiver3(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_normale(:,:,1),map_normale(:,:,2),-map_normale(:,:,3))
+
+
+
+
+figure
+sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
+hold on
+title("normale GT")
+axis equal;
+[nb_l,nb_c] = size(masque_1_shrink);
+map_normale = zeros(nb_l,nb_c,3);
+map_normale(ind_1_shrink) = normales_GT(1,:)';
+map_normale(ind_1_shrink + nb_l*nb_c) = normales_GT(2,:)';
+map_normale(ind_1_shrink + 2*nb_l*nb_c) = normales_GT(3,:)';
+quiver3(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_normale(:,:,1),map_normale(:,:,2),-map_normale(:,:,3))
+%}

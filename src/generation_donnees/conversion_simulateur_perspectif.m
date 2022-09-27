@@ -21,7 +21,7 @@ v_0 = K(2,3);
 f = K(1,1);
 
 % Image de référence
-indice_image_reference = 6;
+indice_image_reference = 5;
 
 % L'éclairage
 s = params.lightIntensity * params.lightSource;

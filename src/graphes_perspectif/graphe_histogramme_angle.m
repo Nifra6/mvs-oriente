@@ -11,10 +11,11 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 4;
-surface = "gaussienne_decentree";
-surface = "calotte_calotte_persp";
+surface = "gaussienne_decentree_corrige";
+%surface = "calotte";
+%surface = "calotte_calotte_persp";
 %surface = "reel_mur";
-surface = "plan_peppers_11flou_16bit";
+%surface = "plan_peppers_11flou_16bit";
 nombre_vues = 9;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
@@ -22,7 +23,7 @@ ecart_type_I = -2.5;
 filtrage = 0;
 nombre_profondeur_iteration = 5000;
 utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
 
@@ -125,9 +126,9 @@ normales_fronto(3,:) = -1;
 angles_mvs = angle_normale(normales_fronto,normales_mvs);
 angles_mvsm = angle_normale(normales_fronto,normales_mvsm);
 angles_GT = angle_normale(normales_fronto, normales_GT);
-color_map_value_GT = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvs = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvsm = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
+color_map_value_GT = zeros(size(map_erreur_angles_GT));
+color_map_value_mvs = zeros(size(map_erreur_angles_GT));
+color_map_value_mvsm = zeros(size(map_erreur_angles_GT));
 
 zones_angles = 0:10:180;
 zones_angles = 0:10:50;
@@ -160,9 +161,14 @@ if (~utilisation_profondeur_GT)
 		ylabel('Erreurs de profondeurs médianes')
 	else
 		b = bar(label_zones,[erreurs_mvs_moy ; erreurs_mvsm_moy ; erreurs_mvs_med ; erreurs_mvsm_med]);
-		legend('Moyenne MVS','Moyenne MVS modifié','Médiane MVS','Médiane MVS modifié','Location','best')
-		xlabel('Angles des normales avec la direction de la caméra de référence')
-		ylabel('Erreurs de profondeurs')
+		%b = bar(label_zones,[erreurs_mvs_moy ; erreurs_mvsm_moy]);
+		%legend('Moyenne MVS','Moyenne MVS modifié','Médiane MVS','Médiane MVS modifié','Location','best')
+		%xlabel('Angles des normales avec la direction de la caméra de référence')
+		%ylabel('Erreurs de profondeurs')
+		legend('Average error standard MVS','Average error proposed MVS','Median error standard MVS','Median error proposed MVS','Location','best')
+		%legend('Average error standard MVS','Average error proposed MVS','Location','best')
+		xlabel('Angles between surface normal and the optical axis (degrees)')
+		ylabel('Depth error (meters)')
 	end
 	%title(["Erreurs sur la surface " + surface ; "avec " + int2str(nombre_profondeur_iteration) + " échantillons" + complement_titre],'interpreter','none');
 
@@ -206,7 +212,8 @@ colorbar;
 view([-90 90])
 
 if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
+	%subplot(2,1,2);
+	figure
 	s = surf(X,Y,-z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvs);
 	s.EdgeColor = 'none';
 	s.CDataMapping = 'scaled';
@@ -215,13 +222,16 @@ if (~utilisation_profondeur_GT)
 	grid off;
 	colormap jet;
 	c = colorbar;
-	c.Label.String = 'Erreur de profondeurs (en m)';
+	%c.Label.String = 'Erreur de profondeurs (en m)';
+	c.Label.String = 'Depth error (meters)';
 	c.Label.FontSize = 11;
 	c.Location = "east";
 	c.AxisLocation = "out";
 	axis equal;
-	title("Reconstruction MVS" + complement_titre,'interpreter','none');
-	view([-90 90]);
+	%title("Reconstruction MVS" + complement_titre,'interpreter','none');
+	title("Standard MVS",'interpreter','none');
+	box on;
+	%view([-90 90]);
 end
 
 % Préparation de la reconstruction
@@ -254,7 +264,8 @@ title("Relief MVS modifié",'interpreter','none');
 %view([-90 90]);
 
 if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
+	%subplot(2,1,2);
+	figure
 	s = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvsm);
 	s.EdgeColor = 'none';
 	s.CDataMapping = 'scaled';
@@ -263,13 +274,16 @@ if (~utilisation_profondeur_GT)
 	grid off;
 	colormap jet;
 	c = colorbar;
-	c.Label.String = 'Erreur de profondeurs (en m)';
+	%c.Label.String = 'Erreur de profondeurs (en m)';
+	c.Label.String = 'Depth error (meters)';
 	c.Label.FontSize = 11;
 	c.Location = "east";
 	c.AxisLocation = "out";
 	axis equal;
 	title("Reconstruction MVSm" + complement_titre,'interpreter','none');
-	view([-90 90]);
+	title("Proposed MVS",'interpreter','none');
+	box on;
+	%view([-90 90]);
 end
 
 
