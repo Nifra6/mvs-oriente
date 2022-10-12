@@ -12,16 +12,16 @@ addpath(genpath('../toolbox/'));
 %% Paramètres
 valeur_bruitage = 4;
 surface = "gaussienne_decentree_corrige";
-%surface = "calotte";
+surface = "boite";
 %surface = "calotte_calotte_persp";
 %surface = "reel_mur";
 %surface = "plan_peppers_11flou_16bit";
-nombre_vues = 9;
+nombre_vues = 2;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 5000;
+nombre_profondeur_iteration = 40;
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 0;
 mesure = "median";
@@ -66,6 +66,8 @@ grille_pixel = grille_pixels;
 % Préparation de la reconstruction
 path_data = '../../data/perspectif/simulateur_';
 load(path_data + surface + '_formate.mat','nb_lignes','nb_colonnes','f','u_0','v_0','s','N','masque','R','t','K');
+u_0 = K(1,3);
+v_0 = K(2,3);
 masque_1 = masque(:,:,1); clear masque;
 masque_1(1:rayon_voisinage,:) = 0;
 masque_1(end-rayon_voisinage:end,:) = 0;
@@ -86,8 +88,9 @@ Y_o = Y_o - v_0;
 [X_o,Y_o] = meshgrid(X_o,Y_o);
 
 % Préparation des erreurs
-map_erreur_mvs = zeros(size(X_o,2),size(Y_o,2));
-map_erreur_mvsm = zeros(size(X_o,2),size(Y_o,2));
+map_erreur_mvs = zeros(size(X_o,1),size(X_o,2));
+
+map_erreur_mvsm = zeros(size(X_o,1),size(X_o,2));
 size(ind_1_shrink)
 size(erreur_z_mvs)
 map_erreur_mvs(ind_1_shrink) = erreur_z_mvs;
@@ -212,7 +215,7 @@ colorbar;
 view([-90 90])
 
 if (~utilisation_profondeur_GT)
-	%subplot(2,1,2);
+	subplot(2,1,2);
 	figure
 	s = surf(X,Y,-z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvs);
 	s.EdgeColor = 'none';
@@ -264,7 +267,7 @@ title("Relief MVS modifié",'interpreter','none');
 %view([-90 90]);
 
 if (~utilisation_profondeur_GT)
-	%subplot(2,1,2);
+	subplot(2,1,2);
 	figure
 	s = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvsm);
 	s.EdgeColor = 'none';

@@ -15,7 +15,7 @@ valeur_bruitage = 8;
 liste_surface = ["calotte", "calotte_calotte", "calotte_peppers", "gaussienne_decentree"];
 %liste_surface = ["reel_mur"];
 liste_surface = ["gaussienne_decentree_corrige", "sinc"];
-%liste_surface = ["sinc"];
+%liste_surface = ["boite"];
 %liste_surface = ["plan_peppers_21flou_16bit_cote_corrige"];
 %liste_surface = ["plan_peppers_11flou_8bit","plan_peppers_21flou_8bit","plan_peppers_11flou_16bit","plan_peppers_21flou_16bit",];
 liste_rayon_voisinage = [4];
@@ -26,10 +26,10 @@ liste_ecart_type_I = -1;
 %liste_ecart_type_grad = [0:10];
 liste_ecart_type_grad = 0;
 filtrage = 0;
-grille_pixels = 8;
-liste_nombre_vues = [9];
-liste_nombre_profondeur_iteration = [5000];
-utilisation_profondeur_GT = 0;
+grille_pixels = 4;
+liste_nombre_vues = [2];
+liste_nombre_profondeur_iteration = [40];
+utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 
 %% Variables

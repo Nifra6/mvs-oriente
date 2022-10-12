@@ -45,7 +45,16 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
 	end
 	% La matrice inverse de calibrage
-	K_inv = inv(K);
+
+	%K_inv = inv(K);
+	if exist('K')
+		K_inv = inv(K);
+		K = repmat(K,1,1,nb_images);
+	end
+	if exist('K_multi')
+		K = K_multi;
+		K_inv = inv(K(:,:,1))
+	end
 	% Modifications du masque (pour correspondre aux patchs utilisés)
 	masque(1:rayon_voisinage,:,1) = 0;
 	masque(end-rayon_voisinage:end,:,1) = 0;
@@ -164,7 +173,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		% Changements de repère
 		for k = 1:nb_images-1
 			P_k(:,:,k+1) = R_1_k(:,:,k) * P_k(:,:,1) + t_1_k(:,k);
-			p_k = (K * P_k(:,:,k+1)) ./ P_k(3,:,k+1);
+			p_k = (K(:,:,k+1) * P_k(:,:,k+1)) ./ P_k(3,:,k+1);
 			u_k(:,k+1) = p_k(1,:)';
 			v_k(:,k+1) = p_k(2,:)';
 			i_k(:,k+1) = v_k(:,k+1) + offset;
@@ -258,7 +267,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		v_1_decales_vec = reshape(v_1_decales',1,taille_patch,nb_pixels_etudies);
 		p_1_vec = [u_1_decales_vec ; v_1_decales_vec ; ones(1,taille_patch,nb_pixels_etudies)];
 		for k = 1:nb_images-1
-			homographie_totale = pagemtimes(K,pagemtimes(R_1_k(:,:,k) - pagemtimes(t_1_k(:,k),reshape((normale./d_equation_plan),1,3,nb_pixels_etudies)),K_inv));
+			homographie_totale = pagemtimes(K(:,:,k+1),pagemtimes(R_1_k(:,:,k) - pagemtimes(t_1_k(:,k),reshape((normale./d_equation_plan),1,3,nb_pixels_etudies)),K_inv));
 			p_k_voisinage = pagemtimes(homographie_totale, pagemtimes(reshape(Z(1,:),1,1,nb_pixels_etudies), p_1_vec));
 			u_k_voisinage = permute(p_k_voisinage(1,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
 			v_k_voisinage = permute(p_k_voisinage(2,:,:) ./ p_k_voisinage(3,:,:),[3 2 1]);
