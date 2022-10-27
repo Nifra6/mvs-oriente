@@ -12,25 +12,25 @@ addpath(genpath('../toolbox/'));
 %% Paramètres
 valeur_bruitage = 4;
 surface = "gaussienne_decentree_corrige";
-%surface = "sinc";
+surface = "boite_simple";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
-nombre_vues = 9;
+nombre_vues = 5;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 40;
+nombre_profondeur_iteration = 5000;
 utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
-fichier_profondeur_GT = "__profondeurs_GT";
-fichier_profondeur = "";
+fichier_profondeur_GT = "";
+fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
 ecart_type_I = 0;
 fichier_normale_GT = "";
 
@@ -55,7 +55,13 @@ grille_pixel = grille_pixels;
 
 % Préparation de la reconstruction
 path_data = '../../data/perspectif/simulateur_';
-load(path_data + surface + '_formate.mat','nb_lignes','nb_colonnes','f','u_0','v_0','s','N','masque','R','t','K');
+load(path_data + surface + '_formate.mat','nb_lignes','nb_colonnes','f','u_0','v_0','s','N','masque','R','t','K','I');
+
+
+figure
+I_truc = masque(:,:,1).*I(:,:,1);
+imshow(I_truc);
+
 masque_1 = masque(:,:,1); clear masque;
 masque_1(1:rayon_voisinage,:) = 0;
 masque_1(end-rayon_voisinage:end,:) = 0;
@@ -69,6 +75,7 @@ indices_grille = (mod(i_k,grille_pixel) == 1) & (mod(j_k,grille_pixel) == 1);
 ind_1 = ind_1(find(indices_grille));
 N_1 = N(:,:,:,1); clear N;
 normales_GT = [N_1(ind_1)' ; N_1(ind_1 + nb_lignes*nb_colonnes)' ; N_1(ind_1 + 2*nb_lignes*nb_colonnes)'];
+f = K(1,1); u_0 = K(1,3); v_0 = K(2,3);
 X_o = 1:grille_pixel:nb_colonnes;
 Y_o = 1:grille_pixel:nb_lignes;
 X_o = X_o - u_0;
@@ -88,7 +95,7 @@ map_erreur_mvsm(ind_1_shrink) = erreur_z_mvsm;
 min_c_map = min([min(erreur_z_mvs) min(erreur_z_mvsm)]);
 max_c_map = max([max(erreur_z_mvs) max(erreur_z_mvsm)]);
 
-map_erreur_angles_GT = zeros(size(X_o,1),size(Y_o,2));
+map_erreur_angles_GT = zeros(size(X_o,1),size(X_o,2));
 erreurs_angles_GT = angle_normale(normales_GT,normales_mvsm);
 map_erreur_angles_GT(ind_1_shrink) = erreurs_angles_GT;
 
@@ -150,108 +157,10 @@ X = reshape(X,nb_l,nb_c);
 Y = reshape(Y,nb_l,nb_c);
 Z = reshape(Z,nb_l,nb_c);
 
+n_world = R(:,:,1)' * normales_mvsm;
 
-% Affichage de la reconstruction
-figure('Name','Relief MVS','Position',[0,0,0.33*L,0.5*H]);
-sl = surf(X,Y,Z,color_map_value_GT);
-sl.EdgeColor = 'none';
-sl.CDataMapping = 'scaled';
-ax = gca;
-ax.CLim = [0 5];
-grid off;
-colormap 'jet';
-axis equal;
-title("Orientation des normales",'interpreter','none');
-colorbar;
-xlabel('x');
-ylabel('y');
-view([0 90])
-
-diff_erreurs = erreurs_mvs_med - erreurs_mvsm_med
-pourcentages_diff_erreurs = 100 * (erreurs_mvs_med - erreurs_mvsm_med) ./ erreurs_mvs_med
-nombre_points_zones
-
-% Affichage de la reconstruction
-figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
-imagesc(map_erreur_angles_GT)
-%sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_angles_GT);
-%sl.EdgeColor = 'none';
-%sl.CDataMapping = 'scaled';
-%ax = gca;
-%ax.CLim = [0 5];
-%view([-90 90]);
-grid off;
-colormap 'jet';
-colorbar
-axis equal;
-%title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
-
-
-map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));
-erreurs_fronto_GT = angle_normale(normales_GT,normales_fronto);
-map_erreur_fronto_GT(ind_1_shrink) = erreurs_fronto_GT;
-
-map_erreur_fronto_estim = zeros(size(X,2),size(Y,2));
-erreurs_fronto_estim = angle_normale(normales_mvsm,normales_fronto);
-map_erreur_fronto_estim(ind_1_shrink) = erreurs_fronto_estim;
-
-min_map = min([min(map_erreur_fronto_GT,[],'all'),min(map_erreur_fronto_estim,[],'all')]);
-max_map = max([max(map_erreur_fronto_GT,[],'all'),max(map_erreur_fronto_estim,[],'all')]);
-
-figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
-sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_GT);
-sl.EdgeColor = 'none';
-sl.CDataMapping = 'scaled';
-ax = gca;
-ax.CLim = [min_map max_map];
-grid off;
-colormap 'jet';
-colorbar
-axis equal;
-title("Différence angulaire entre normales GT et normales frontoparallèles",'interpreter','none');
-view([0 90]);
-
-
-figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
-sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
-sl.EdgeColor = 'none';
-sl.CDataMapping = 'scaled';
-ax = gca;
-ax.CLim = [min_map max_map];
-grid off;
-colormap 'jet';
-colorbar
-axis equal;
-title("Différence angulaire entre normales estimées et normales frontoparallèles",'interpreter','none');
-view([0 90]);
-
-
-
-%{
-figure
-sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
+quiver3(X(ind_1_shrink),Y(ind_1_shrink),Z(ind_1_shrink),n_world(1,:)',n_world(2,:)',n_world(3,:)');
+axis equal
 hold on
-title("normale estimee")
-axis equal;
-[nb_l,nb_c] = size(masque_1_shrink);
-map_normale = zeros(nb_l,nb_c,3);
-map_normale(ind_1_shrink) = normales_mvsm(1,:)';
-map_normale(ind_1_shrink + nb_l*nb_c) = normales_mvsm(2,:)';
-map_normale(ind_1_shrink + 2*nb_l*nb_c) = normales_mvsm(3,:)';
-quiver3(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_normale(:,:,1),map_normale(:,:,2),-map_normale(:,:,3))
-
-
-
-
-figure
-sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
-hold on
-title("normale GT")
-axis equal;
-[nb_l,nb_c] = size(masque_1_shrink);
-map_normale = zeros(nb_l,nb_c,3);
-map_normale(ind_1_shrink) = normales_GT(1,:)';
-map_normale(ind_1_shrink + nb_l*nb_c) = normales_GT(2,:)';
-map_normale(ind_1_shrink + 2*nb_l*nb_c) = normales_GT(3,:)';
-quiver3(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_normale(:,:,1),map_normale(:,:,2),-map_normale(:,:,3))
-%}
+surf(X,Y,Z);
+colormap gray

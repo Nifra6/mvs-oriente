@@ -125,13 +125,12 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind] = mvs(premiere_itera
 		% Sélection d'une profondeur
 		%tic
 		valeur_z 	= z_grossiers_estimes + valeurs_z(indice_z);
-		valeurs_z(indice_z)
 		if (utilisation_profondeurs_GT)
 			Z = repmat(Z_VT(ind_1)',3,1);
 		else
 			Z = repmat(valeur_z',3,1);
 		end
-		%P_k(:,:,1) = Z .* (K_inv * p_1);
+		P_k(:,:,1) = Z .* (K_inv * p_1);
 		%toc
 
 		% Changements de repère

@@ -45,7 +45,6 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 		t_1_k(:,k) = t(:,k+1) - R_1_k(:,:,k) * t(:,1);
 	end
 	% La matrice inverse de calibrage
-
 	%K_inv = inv(K);
 	if exist('K')
 		K_inv = inv(K);
@@ -53,7 +52,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 	end
 	if exist('K_multi')
 		K = K_multi;
-		K_inv = inv(K(:,:,1))
+		K_inv = inv(K(:,:,1));
 	end
 	% Modifications du masque (pour correspondre aux patchs utilisés)
 	masque(1:rayon_voisinage,:,1) = 0;

@@ -16,12 +16,12 @@ surface = "boite";
 %surface = "calotte_calotte_persp";
 %surface = "reel_mur";
 %surface = "plan_peppers_11flou_16bit";
-nombre_vues = 2;
+nombre_vues = 4;
 rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 40;
+nombre_profondeur_iteration = 1000;
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 0;
 mesure = "median";
@@ -101,9 +101,12 @@ map_erreur_mvsm(ind_1_shrink) = erreur_z_mvsm;
 min_c_map = min([min(erreur_z_mvs) min(erreur_z_mvsm)]);
 max_c_map = max([max(erreur_z_mvs) max(erreur_z_mvsm)]);
 
-map_erreur_angles_GT = zeros(size(X_o,2),size(Y_o,2));
+map_erreur_angles_GT = zeros(size(X_o,1),size(Y_o,2));
 erreurs_angles_GT = angle_normale(normales_GT,normales_mvsm);
 map_erreur_angles_GT(ind_1_shrink) = erreurs_angles_GT;
+
+map_z_estime_mvs = zeros(size(X_o,1),size(Y_o,2));
+map_z_estime_mvs(ind_1_shrink) = z_estime_mvs;
 
 complement_titre = ", " + nombre_vues + " vues";
 if (ecart_type_grad >= 0 & filtrage)
@@ -310,7 +313,7 @@ grid off;
 colormap 'jet';
 colorbar
 axis equal;
-%title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
+title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
 
 
 map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));
