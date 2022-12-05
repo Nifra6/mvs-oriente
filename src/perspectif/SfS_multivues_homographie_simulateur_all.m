@@ -8,8 +8,8 @@ H = taille_ecran(4);
 %% Données
 load ../../data/perspectif/simulateur_formate.mat;
 % Indices des images
-indice_premiere_image = 2;
-indice_deuxieme_image = 4;
+indice_premiere_image = 1;
+indice_deuxieme_image = 2;
 % Les profondeurs
 Z_1 = z(:,:,indice_premiere_image);
 % Les images
@@ -61,12 +61,12 @@ figure;
 title("Cliquez sur le pixel souhaité.")
 imshow(I_1);
 title('Image de référence');
-P			= drawpoint;
-pos 		= P.Position;
-i_1 		= round(pos(2));
-j_1 		= round(pos(1));
-%i_1 = 128;
-%j_1 = 250;
+%P			= drawpoint;
+%pos 		= P.Position;
+%i_1 		= round(pos(2));
+%j_1 		= round(pos(1));
+i_1 = 270;
+j_1 = 346;
 grad_I_1	= [dx_I_1(i_1,j_1); dy_I_1(i_1,j_1)];
 
 
@@ -77,7 +77,7 @@ hold on;
 
 % Récupération de la profondeur
 nb_z = 100;
-liste_z = linspace(1,2.5,nb_z);
+liste_z = linspace(1.140,1.145,nb_z);
 for ind_z = 1:nb_z
 	z = liste_z(ind_z);
 

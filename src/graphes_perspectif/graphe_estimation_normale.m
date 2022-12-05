@@ -11,7 +11,8 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 4;
-surface = "gaussienne_decentree_corrige";
+surface = "gaussienne_decentree_corrige2";
+%surface = "gaussienneDecentree";
 %surface = "sinc";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
@@ -21,9 +22,9 @@ rayon_voisinage = 4;
 ecart_type_grad = -5;
 ecart_type_I = -2.5;
 filtrage = 0;
-nombre_profondeur_iteration = 40;
-utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 1;
+nombre_profondeur_iteration = 5000;
+utilisation_profondeur_GT = 1;
+utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
 

@@ -84,7 +84,7 @@ function [z_estime,erreur_z,espace_z_suivant,n_totales_ind,erreur_angle_moy,erre
 
 
 	%% Calcul du filtre
-	filtrage = sigma_filtre_grad >= 0 | sigma_filtre_I >= 0;
+	filtrage = sigma_filtre_grad > 0 | sigma_filtre_I > 0;
 	if (filtrage)
 		u_x = 0; u_y = 0;
 		if (sigma_filtre_I > 0)

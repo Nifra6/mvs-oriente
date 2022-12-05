@@ -10,27 +10,32 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 4;
+valeur_bruitage = 0;
 surface = "gaussienne_decentree_corrige";
-surface = "boite_simple";
+surface = "boite_simple_scale8_GT";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
 nombre_vues = 5;
 rayon_voisinage = 4;
-ecart_type_grad = -5;
-ecart_type_I = -2.5;
+ecart_type_grad = 10;
+ecart_type_I = 0;
 filtrage = 0;
 nombre_profondeur_iteration = 5000;
-utilisation_profondeur_GT = 0;
+utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
-fichier_profondeur_GT = "";
-fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
+if (utilisation_profondeur_GT)
+	fichier_profondeur_GT = "__profondeurs_GT";
+	fichier_profondeur = "";
+else
+	fichier_profondeur_GT = "";
+	fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
+end
 ecart_type_I = 0;
 fichier_normale_GT = "";
 
@@ -118,9 +123,9 @@ normales_fronto(3,:) = -1;
 angles_mvs = angle_normale(normales_fronto,normales_mvs);
 angles_mvsm = angle_normale(normales_fronto,normales_mvsm);
 angles_GT = angle_normale(normales_fronto, normales_GT);
-color_map_value_GT = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvs = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvsm = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
+color_map_value_GT = zeros(size(X_o,1),size(X_o,2));
+color_map_value_mvs = zeros(size(X_o,1),size(X_o,2));
+color_map_value_mvsm = zeros(size(X_o,1),size(X_o,2));
 
 zones_angles = 0:10:180;
 zones_angles = 0:10:50;
@@ -133,6 +138,14 @@ nombre_points_zones = zeros(1,nombre_zones);
 label_zones = [];
 for k = 1:nombre_zones
 	indices_GT = find(zones_angles(k) <= angles_GT & angles_GT < zones_angles(k+1));
+
+	% Bug
+	size(color_map_value_GT)
+	size(ind_1_shrink)
+	size(indices_GT')
+
+
+
 	color_map_value_GT(ind_1_shrink(indices_GT')) = k;
 	nombre_points_zones(k) = length(indices_GT);
 	erreurs_mvs_moy(k) = transpose(mean(erreur_z_mvs(indices_GT)));
@@ -158,8 +171,12 @@ Y = reshape(Y,nb_l,nb_c);
 Z = reshape(Z,nb_l,nb_c);
 
 n_world = R(:,:,1)' * normales_mvsm;
+n_GT = R(:,:,1)' * normales_GT;
+n_GT(1,1,:)
 
 quiver3(X(ind_1_shrink),Y(ind_1_shrink),Z(ind_1_shrink),n_world(1,:)',n_world(2,:)',n_world(3,:)');
+hold on;
+quiver3(X(ind_1_shrink),Y(ind_1_shrink),Z(ind_1_shrink),n_GT(1,:)',n_GT(2,:)',n_GT(3,:)','r');
 axis equal
 hold on
 surf(X,Y,Z);

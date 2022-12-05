@@ -10,27 +10,32 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 4;
+valeur_bruitage = 0;
 %surface = "gaussienne_decentree_corrige";
-surface = "boite_simple";
+surface = "boite_simple_scale8_GT";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
 nombre_vues = 5;
 rayon_voisinage = 4;
-ecart_type_grad = -5;
-ecart_type_I = -2.5;
+ecart_type_grad = 10;
+ecart_type_I = 0;
 filtrage = 0;
 nombre_profondeur_iteration = 5000;
-utilisation_profondeur_GT = 0;
+utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
-fichier_profondeur_GT = "";
-fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
+if (utilisation_profondeur_GT)
+	fichier_profondeur_GT = "__profondeurs_GT";
+	fichier_profondeur = "";
+else
+	fichier_profondeur_GT = "";
+	fichier_profondeur = "__nb_profondeur_" + int2str(nombre_profondeur_iteration);
+end
 ecart_type_I = 0;
 fichier_normale_GT = "";
 
@@ -44,6 +49,7 @@ if (ecart_type_grad >= 0 & filtrage)
 else
 	fichier_bruite = "";
 end
+disp(fichier_bruite)
 
 
 nom_fichier = "Surface_" + surface + "__nb_vues_" + int2str(nombre_vues) + "__patch_" ...
@@ -118,9 +124,9 @@ normales_fronto(3,:) = -1;
 angles_mvs = angle_normale(normales_fronto,normales_mvs);
 angles_mvsm = angle_normale(normales_fronto,normales_mvsm);
 angles_GT = angle_normale(normales_fronto, normales_GT);
-color_map_value_GT = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvs = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
-color_map_value_mvsm = zeros(floor(nb_lignes/grille_pixel),floor(nb_colonnes/grille_pixel));
+color_map_value_GT = zeros(size(X_o,1),size(X_o,2));
+color_map_value_mvs = zeros(size(X_o,1),size(X_o,2));
+color_map_value_mvsm = zeros(size(X_o,1),size(X_o,2));
 
 zones_angles = 0:10:180;
 zones_angles = 0:10:50;
