@@ -4,8 +4,8 @@
 % analyser les résultats avec la vérité terrain.
 
 %% Paramètres
-filtrage_points	= 1;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
-masque_calotte	= 0;
+filtrage_points	= 0;	% Retire tous les points 3D qui ne sont pas reprojeté dans chacune des images
+masque_calotte	= 1;
 
 %% Chargement des données
 load ../../data/perspectif/simulateur.mat;

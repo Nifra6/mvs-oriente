@@ -11,8 +11,11 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 4;
-surface = "gaussienne_decentree_corrige2";
+%surface = "gaussienne_decentree_corrige";
+surface = "calotteSphere";
 %surface = "gaussienneDecentree";
+surface = "gaussienneAnisotrope";
+surface = "sinusCardinal";
 %surface = "sinc";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"

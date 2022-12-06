@@ -11,3 +11,10 @@ Le dossier **src** contient les différents codes utilisables, regroupés par ca
 4. Les dossiers **graphes** et **graphes_perspectif** permettent d'anaylser les résultats obtenus par recosntruction grâce à différents types de graphes.
 5. Le dossier **toolbox** contient quelques fonctions utiles pour les autres codes.
 6. Le dossier **old** contient une majorité de codes qui ne sont plus d'actualités mais qui peuvent être utiles.
+
+## Utilisation
+
+Pour estimer les profondeurs et analyser les résultats, il suffit de se référer aux README.md dans les dossiers suivants :
+1. Le dossier **generation_donnees**
+2. Le dossier **perspectif** 
+3. Le dossier **graphes_perspectifs**
