@@ -188,7 +188,7 @@ if (~utilisation_profondeur_GT)
 		'VerticalAlignment','bottom')
 end
 
-% Préparation de la reconstruction
+% Préparation de la reconstruction mvs classique
 Z = z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
 [nb_l,nb_c] = size(X_o);
 R_inv = R(:,:,1)'
@@ -203,7 +203,7 @@ Y = reshape(Y,nb_l,nb_c);
 Z = reshape(Z,nb_l,nb_c);
 
 
-% Affichage de la reconstruction
+% Affichage de la reconstruction mvs classique
 figure('Name','Relief MVS','Position',[0,0,0.33*L,0.5*H]);
 subplot(2,1,1);
 sl = surf(X,Y,Z,color_map_value_GT);
@@ -219,6 +219,7 @@ title("Orientation des normales",'interpreter','none');
 colorbar;
 view([-90 90])
 
+% Affichage de la reconruction mvs classique avec erreurs de profondeurs
 if (~utilisation_profondeur_GT)
 	subplot(2,1,2);
 	figure
@@ -242,7 +243,7 @@ if (~utilisation_profondeur_GT)
 	%view([-90 90]);
 end
 
-% Préparation de la reconstruction
+% Préparation de la reconstruction mvs modifié
 Z = z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end);
 [nb_l,nb_c] = size(X_o);
 R_inv = R(:,:,1)'
@@ -257,7 +258,7 @@ Y = reshape(Y,nb_l,nb_c);
 Z = reshape(Z,nb_l,nb_c);
 
 
-% Affichage de la reconstruction
+% Affichage de la reconstruction mvs modifié
 figure('Name','Relief MVS modifié','Position',[0,0,0.33*L,0.5*H]);
 subplot(2,1,1);
 sl = surf(X,Y,Z,color_map_value_GT);
@@ -271,6 +272,7 @@ axis equal;
 title("Relief MVS modifié",'interpreter','none');
 %view([-90 90]);
 
+% Affichage de la reconruction mvs modifié avec erreurs de profondeurs
 if (~utilisation_profondeur_GT)
 	subplot(2,1,2);
 	figure
@@ -302,7 +304,7 @@ nombre_points_zones
 
 
 
-% Affichage de la reconstruction
+% Cartes d'erreurs angulaire
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
 imagesc(map_erreur_angles_GT')
 %sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_angles_GT);
@@ -329,6 +331,8 @@ map_erreur_fronto_estim(ind_1_shrink) = erreurs_fronto_estim;
 min_map = min([min(map_erreur_fronto_GT,[],'all'),min(map_erreur_fronto_estim,[],'all')]);
 max_map = max([max(map_erreur_fronto_GT,[],'all'),max(map_erreur_fronto_estim,[],'all')]);
 
+
+% Représentation 3D normales GT / frontoparallèles
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
 sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_GT);
 sl.EdgeColor = 'none';
@@ -343,6 +347,7 @@ title("Différence angulaire entre normales GT et normales frontoparallèles",'i
 view([-90 90]);
 
 
+% Représentation 3D normales estimées / frontoparallèles
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
 sl = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_fronto_estim);
 sl.EdgeColor = 'none';
