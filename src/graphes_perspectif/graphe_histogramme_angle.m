@@ -10,18 +10,19 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 4;
+valeur_bruitage = 6;
 surface = "gaussienne_decentree_corrige";
 surface = "boite";
+surface = "gaussienneDecentree";
 %surface = "calotte_calotte_persp";
 %surface = "reel_mur";
 %surface = "plan_peppers_11flou_16bit";
-nombre_vues = 4;
+nombre_vues = 5;
 rayon_voisinage = 4;
-ecart_type_grad = -5;
-ecart_type_I = -2.5;
+ecart_type_grad = -1;
+ecart_type_I = -2;
 filtrage = 0;
-nombre_profondeur_iteration = 1000;
+nombre_profondeur_iteration = 5000;
 utilisation_profondeur_GT = 0;
 utilisation_normale_GT = 0;
 mesure = "median";
@@ -46,10 +47,10 @@ end
 
 if (ecart_type_grad >= 0 & filtrage)
 	if (ecart_type_I >= 0)
-		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_I_" ...
+		fichier_bruite = "__bruite" + int2str(valeur_bruitage) + "__filtre_I_" ...
 			+ num2str(ecart_type_I) + "__filtre_grad_" + num2str(ecart_type_grad);
 	else
-		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_" + num2str(ecart_type_grad);
+		fichier_bruite = "__bruite" + int2str(valeur_bruitage) + "__filtre_" + num2str(ecart_type_grad);
 	end
 else
 	fichier_bruite = "";
@@ -106,7 +107,8 @@ erreurs_angles_GT = angle_normale(normales_GT,normales_mvsm);
 map_erreur_angles_GT(ind_1_shrink) = erreurs_angles_GT;
 
 map_z_estime_mvs = zeros(size(X_o,1),size(Y_o,2));
-map_z_estime_mvs(ind_1_shrink) = z_estime_mvs;
+size(z_estime_mvs)
+map_z_estime_mvs(ind_1_shrink) = z_estime_mvs(ind_1);
 
 complement_titre = ", " + nombre_vues + " vues";
 if (ecart_type_grad >= 0 & filtrage)

@@ -11,28 +11,29 @@ L = taille_ecran(3);
 H = taille_ecran(4);
 
 %% Paramètres
-valeur_bruitage = 0;
+valeur_bruitage = 6;
 %liste_surface = ["calotte", "calotte_calotte", "calotte_peppers", "gaussienne_decentree"];
 %liste_surface = ["reel_mur"];
 %liste_surface = ["gaussienne_decentree_corrige"];
 %liste_surface = ["boite"];
-liste_surface = ["calotteSphere","gaussienneDecentree","gaussienneAnisotrope","sinusCardinal"];
+%liste_surface = ["calotteSphere","gaussienneDecentree","gaussienneAnisotrope","sinusCardinal"];
+liste_surface = ["calotteSphere_bruite" + int2str(valeur_bruitage),"gaussienneDecentree_bruite" + int2str(valeur_bruitage),"sinusCardinal_bruite" + int2str(valeur_bruitage)];
 %liste_surface = ["boite_simple_scale8_GT"];
 %liste_surface = ["plan_peppers_21flou_16bit_cote_corrige"];
 %liste_surface = ["plan_peppers_11flou_8bit","plan_peppers_21flou_8bit","plan_peppers_11flou_16bit","plan_peppers_21flou_16bit",];
 liste_rayon_voisinage = [4];
 %liste_surface = ["gaussienne_decentree_cote"];
 nombre_iteration = 1;
-%liste_ecart_type_I = [0:0.5:3];
-liste_ecart_type_I = -1;
-%liste_ecart_type_grad = [0:10];
-liste_ecart_type_grad = -1;
-filtrage = 0;
-grille_pixels = 2;
-liste_nombre_vues = [9];
+liste_ecart_type_I = [0:0.5:3];
+%liste_ecart_type_I = -1;
+liste_ecart_type_grad = [0:2:10];
+%liste_ecart_type_grad = -1;
+filtrage = 1;
+grille_pixels = 10;
+liste_nombre_vues = [5];
 liste_nombre_profondeur_iteration = [5000];
-utilisation_profondeur_GT = 1;
-utilisation_normale_GT = 0;
+utilisation_profondeur_GT = 0;
+utilisation_normale_GT = 1;
 
 %% Variables
 nb_surface = size(liste_surface,2);
