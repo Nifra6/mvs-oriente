@@ -27,6 +27,7 @@ nombre_iteration = 1;
 liste_ecart_type_I = [0:0.5:3];
 %liste_ecart_type_I = -1;
 liste_ecart_type_grad = [0:2:10];
+liste_ecart_type_grad = [5:8];
 %liste_ecart_type_grad = -1;
 filtrage = 1;
 grille_pixels = 10;

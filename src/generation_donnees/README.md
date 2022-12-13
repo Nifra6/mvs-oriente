@@ -6,8 +6,8 @@ Ce dossier contient l'ensemble des outils pour préparer les données pour les t
 
 Les codes **conversion_simulateur_orthographique** et **conversion_simulateur_perspectif** sont les premiers codes à exécuter en cas d'obtentions de nouvelles données depuis le simulateur. Ces scripts vont convertir le fichier **simulateur.mat** contenu dans le dossier **data/[orthographique|perspectif]** en un fichier **simulateur_formate.mat** qui est utilisable par les restes des codes.
 Il y a deux options :
-- filtrage\_points est un booléen permettant de retirer les pixels qui ne sont pas présents dans l'ensemble des images du jeu de test, afin de renforcer la confiance dans les statistiques générées (les occultations ne sont pas considérés dans ces codes). En cas de crash pour mémoire insuffisante, y compris lorsque c'est le seul processus actif, vous pouvez augmentez la valeur de grille\_pixel, un paramètre limitant les pixels utilisés. Ne pas utiliser si la calotte, ou tout autre scène non continue est utilisée.
-- masque_calotte est un booléen permettant de travailler avec les images qui comportent une scène limitée. Dans le cadre d'une calotte de sphère, seuls les pixels appartenant à la calotte seront étudiés.
+- filtrage\_points est un booléen permettant de retirer les pixels qui ne sont pas présents dans l'ensemble des images du jeu de test, afin de renforcer la confiance dans les statistiques générées (les occultations ne sont pas considérés dans ces codes). En cas de crash pour mémoire insuffisante, y compris lorsque c'est le seul processus actif, vous pouvez augmenter la valeur de grille\_pixel, un paramètre limitant les pixels utilisés. Ne pas utiliser si la calotte ou toute autre scène non continue est utilisée.
+- masque\_calotte est un booléen permettant de travailler avec les images qui comportent une scène limitée. Dans le cadre d'une calotte de sphère, seuls les pixels appartenant à la calotte seront étudiés.
 
 La section *Mise en forme des données* de ces codes vous renseigneront sur les variables contenus dans les fichiers formatés.
 
