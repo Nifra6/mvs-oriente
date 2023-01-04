@@ -11,22 +11,38 @@ addpath(genpath('../toolbox/'));
 
 %% Paramètres
 valeur_bruitage = 6;
-surface = "gaussienne_decentree_corrige";
-surface = "boite";
+%surface = "gaussienne_decentree_corrige";
+%surface = "boite";
 surface = "gaussienneDecentree";
+surface = "gaussienneAnisotrope";
+surface = "calotteSphere";
+surface = "sinusCardinal";
+surface = "gaussienneDecentree_bruite6";
+%surface = "gaussienneAnisotrope_bruite6";
+%surface = "calotteSphere_bruite6";
+%surface = "sinusCardinal_bruite6";
+surface = "gaussienneDecentree_planche16";
+surface = "gaussienneAnisotrope_planche16";
+surface = "calotteSphere_planche16";
+surface = "sinusCardinal_planche16";
+%surface = "gaussienneDecentree_planche16_bruite6";
+%surface = "gaussienneAnisotrope_planche16_bruite6";
+%surface = "calotteSphere_planche16_bruite6";
+%surface = "sinusCardinal_planche16_bruite6";
 %surface = "calotte_calotte_persp";
 %surface = "reel_mur";
 %surface = "plan_peppers_11flou_16bit";
 nombre_vues = 5;
 rayon_voisinage = 4;
 ecart_type_grad = -1;
-ecart_type_I = -2;
+ecart_type_I = -1;
 filtrage = 0;
 nombre_profondeur_iteration = 5000;
 utilisation_profondeur_GT = 0;
-utilisation_normale_GT = 0;
+utilisation_normale_GT = 1;
 mesure = "median";
 mesure = "all";
+save_graphe = 1;
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
@@ -47,10 +63,10 @@ end
 
 if (ecart_type_grad >= 0 & filtrage)
 	if (ecart_type_I >= 0)
-		fichier_bruite = "__bruite" + int2str(valeur_bruitage) + "__filtre_I_" ...
+		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_I_" ...
 			+ num2str(ecart_type_I) + "__filtre_grad_" + num2str(ecart_type_grad);
 	else
-		fichier_bruite = "__bruite" + int2str(valeur_bruitage) + "__filtre_" + num2str(ecart_type_grad);
+		fichier_bruite = "__bruite_" + int2str(valeur_bruitage) + "__filtre_" + num2str(ecart_type_grad);
 	end
 else
 	fichier_bruite = "";
@@ -127,6 +143,8 @@ if (utilisation_normale_GT)
 	complement_titre = complement_titre + ", normales VT";
 end
 
+save_path = "../../result/graphes/";
+
 
 %% Analyse des résultats
 normales_fronto = zeros(size(normales_mvsm));
@@ -186,6 +204,15 @@ if (~utilisation_profondeur_GT)
 	labels1 = string(nombre_points_zones);
 	text(xtips1,ytips1,labels1,'HorizontalAlignment','center',...
 		'VerticalAlignment','bottom')
+	if (save_graphe)
+		fig_name = save_path + "Histogramme_angle_" + "__surface_" + surface + "__nb_vues_" ...
+			+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+			+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+		f = gcf
+		savefig(fig_name+".fig")
+		exportgraphics(f,fig_name+".png",'Resolution',300)
+		close
+	end
 end
 
 % Préparation de la reconstruction mvs classique
@@ -205,7 +232,7 @@ Z = reshape(Z,nb_l,nb_c);
 
 % Affichage de la reconstruction mvs classique
 figure('Name','Relief MVS','Position',[0,0,0.33*L,0.5*H]);
-subplot(2,1,1);
+%subplot(2,1,1);
 sl = surf(X,Y,Z,color_map_value_GT);
 sl.EdgeColor = 'none';
 sl.CDataMapping = 'scaled';
@@ -218,10 +245,19 @@ axis equal;
 title("Orientation des normales",'interpreter','none');
 colorbar;
 view([-90 90])
+if (save_graphe)
+	fig_name = save_path + "Zones_angulaire_mvs_standard" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 % Affichage de la reconruction mvs classique avec erreurs de profondeurs
 if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
+	%subplot(2,1,2);
 	figure
 	s = surf(X,Y,-z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvs);
 	s.EdgeColor = 'none';
@@ -241,6 +277,15 @@ if (~utilisation_profondeur_GT)
 	title("Standard MVS",'interpreter','none');
 	box on;
 	%view([-90 90]);
+	if (save_graphe)
+		fig_name = save_path + "Representation_3d_mvs_standard" + "__surface_" + surface + "__nb_vues_" ...
+			+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+			+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+		f = gcf
+		savefig(fig_name+".fig")
+		exportgraphics(f,fig_name+".png",'Resolution',300)
+		close
+	end
 end
 
 % Préparation de la reconstruction mvs modifié
@@ -260,7 +305,7 @@ Z = reshape(Z,nb_l,nb_c);
 
 % Affichage de la reconstruction mvs modifié
 figure('Name','Relief MVS modifié','Position',[0,0,0.33*L,0.5*H]);
-subplot(2,1,1);
+%subplot(2,1,1);
 sl = surf(X,Y,Z,color_map_value_GT);
 sl.EdgeColor = 'none';
 sl.CDataMapping = 'scaled';
@@ -271,10 +316,19 @@ colormap 'jet';
 axis equal;
 title("Relief MVS modifié",'interpreter','none');
 %view([-90 90]);
+if (save_graphe)
+	fig_name = save_path + "Zones_angulaire_mvs_propose" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 % Affichage de la reconruction mvs modifié avec erreurs de profondeurs
 if (~utilisation_profondeur_GT)
-	subplot(2,1,2);
+	%subplot(2,1,2);
 	figure
 	s = surf(X,Y,-z_estime_mvsm(1:grille_pixel:end,1:grille_pixel:end),map_erreur_mvsm);
 	s.EdgeColor = 'none';
@@ -294,6 +348,16 @@ if (~utilisation_profondeur_GT)
 	title("Proposed MVS",'interpreter','none');
 	box on;
 	%view([-90 90]);
+	if (save_graphe)
+		fig_name = save_path + "Representation_3d_mvs_propose" + "__surface_" + surface + "__nb_vues_" ...
+			+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+			+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+		f = gcf
+		savefig(fig_name+".fig")
+		exportgraphics(f,fig_name+".png",'Resolution',300)
+		close
+	end
+
 end
 
 
@@ -318,6 +382,16 @@ colormap 'jet';
 colorbar
 axis equal;
 title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_GT_estime" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
+
 
 
 map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));
@@ -345,6 +419,15 @@ colorbar
 axis equal;
 title("Différence angulaire entre normales GT et normales frontoparallèles",'interpreter','none');
 view([-90 90]);
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_GT_fronto" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 
 % Représentation 3D normales estimées / frontoparallèles
@@ -360,3 +443,12 @@ colorbar
 axis equal;
 title("Différence angulaire entre normales estimées et normales frontoparallèles",'interpreter','none');
 view([-90 90]);
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_estime_fronto" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end

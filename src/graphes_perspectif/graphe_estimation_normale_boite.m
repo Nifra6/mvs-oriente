@@ -13,6 +13,7 @@ addpath(genpath('../toolbox/'));
 valeur_bruitage = 0;
 %surface = "gaussienne_decentree_corrige";
 surface = "boite_simple_scale8_GT";
+surface = "planReel";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
@@ -26,6 +27,7 @@ utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
+save_graphe = 1;
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
@@ -148,6 +150,9 @@ for k = 1:nombre_zones
 	label_zones = [ label_zones , zones_angles(k+1) ];
 end
 
+save_path = "../../result/graphes/";
+
+
 %% Affichage
 % Préparation de la reconstruction
 Z = z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
@@ -196,6 +201,15 @@ colormap 'jet';
 colorbar
 axis equal;
 title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_GT_estime" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 
 map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));

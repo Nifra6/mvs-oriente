@@ -10,26 +10,39 @@ H = taille_ecran(4);
 addpath(genpath('../toolbox/'));
 
 %% Paramètres
-valeur_bruitage = 4;
+valeur_bruitage = 6;
 %surface = "gaussienne_decentree_corrige";
-surface = "calotteSphere";
-%surface = "gaussienneDecentree";
+surface = "gaussienneDecentree";
 surface = "gaussienneAnisotrope";
+surface = "calotteSphere";
 surface = "sinusCardinal";
+%surface = "gaussienneDecentree_bruite6";
+%surface = "gaussienneAnisotrope_bruite6";
+%surface = "calotteSphere_bruite6";
+%surface = "sinusCardinal_bruite6";
+surface = "gaussienneDecentree_planche16";
+surface = "gaussienneAnisotrope_planche16";
+surface = "calotteSphere_planche16";
+surface = "sinusCardinal_planche16";
+%surface = "gaussienneDecentree_planche16_bruite6";
+%surface = "gaussienneAnisotrope_planche16_bruite6";
+%surface = "calotteSphere_planche16_bruite6";
+%surface = "sinusCardinal_planche16_bruite6";
 %surface = "sinc";
 %surface = "plan_peppers_21flou_16bit_cote_corrige";
 %surface = "calotte"
 %surface = "sinus";
-nombre_vues = 9;
+nombre_vues = 5;
 rayon_voisinage = 4;
-ecart_type_grad = -5;
-ecart_type_I = -2.5;
+ecart_type_grad = -1;
+ecart_type_I = -1;
 filtrage = 0;
 nombre_profondeur_iteration = 5000;
 utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 mesure = "median";
 mesure = "all";
+save_graphe = 1;
 
 %% Variables
 taille_patch = 2*rayon_voisinage + 1;
@@ -139,6 +152,8 @@ for k = 1:nombre_zones
 	label_zones = [ label_zones , zones_angles(k+1) ];
 end
 
+save_path = "../../result/graphes/";
+
 %% Affichage
 % Préparation de la reconstruction
 Z = z_estime_mvs(1:grille_pixel:end,1:grille_pixel:end);
@@ -189,6 +204,15 @@ colormap 'jet';
 colorbar
 axis equal;
 %title("Différence angulaire entre normales GT et normales estimées",'interpreter','none');
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_GT_estime" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 
 map_erreur_fronto_GT = zeros(size(X,2),size(Y,2));
@@ -214,6 +238,15 @@ colorbar
 axis equal;
 title("Différence angulaire entre normales GT et normales frontoparallèles",'interpreter','none');
 view([0 90]);
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_GT_fronto" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 
 figure('Name','Différence angulaire','Position',[0,0,0.33*L,0.5*H]);
@@ -228,6 +261,15 @@ colorbar
 axis equal;
 title("Différence angulaire entre normales estimées et normales frontoparallèles",'interpreter','none');
 view([0 90]);
+if (save_graphe)
+	fig_name = save_path + "Comparaison_angle_estime_fronto" + "__surface_" + surface + "__nb_vues_" ...
+		+ int2str(nombre_vues) + "__patch_" + int2str(taille_patch) + "x" + int2str(taille_patch) ...
+		+ fichier_profondeur + fichier_bruite + fichier_profondeur_GT + fichier_normale_GT
+	f = gcf
+	savefig(fig_name+".fig")
+	exportgraphics(f,fig_name+".png",'Resolution',300)
+	close
+end
 
 
 

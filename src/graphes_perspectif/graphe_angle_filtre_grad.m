@@ -21,7 +21,7 @@ rayon_voisinage = 4;
 nombre_iteration = 1;
 liste_ecart_type_grad = [0:10];
 nombre_profondeur_iteration = 5000;
-ecart_type_I_lock = 1;
+ecart_type_I_lock = 0.5;
 utilisation_profondeur_GT = 1;
 utilisation_normale_GT = 0;
 
